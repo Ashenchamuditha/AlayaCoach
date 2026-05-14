@@ -32,7 +32,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
         setMessages([
           {
             senderId: peerId,
-            recipientId: user.id,
+            receiverId: user.id,
             content: `Hi ${user.name.split(" ")[0]}! Ready for today's check-in?`,
             timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
             read: true,
@@ -41,7 +41,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
       });
 
     const c = createChatClient(token, (m) => {
-      if (m.senderId === peerId || m.recipientId === peerId) {
+      if (m.senderId === peerId || m.receiverId === peerId) {
         setMessages((prev) => [...prev, m]);
       }
     });
@@ -60,7 +60,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
     if (!text.trim() || !user) return;
     const msg: ChatMessage = {
       senderId: user.id,
-      recipientId: peerId,
+      receiverId: peerId,
       content: text.trim(),
       timestamp: new Date().toISOString(),
       read: false,

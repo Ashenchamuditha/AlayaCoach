@@ -40,6 +40,9 @@ public class Goal {
 
     private LocalDateTime dueDate;
 
+    private String startTime;
+    private String endTime;
+
     private Integer durationMinutes;
 
     @Column(nullable = false, updatable = false)

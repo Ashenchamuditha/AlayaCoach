@@ -187,42 +187,52 @@ function CoachDashboard() {
             </motion.div>
 
             <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {clients.map((c, i) => (
-                <motion.div
-                  key={c.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                >
-                  <Card
-                    onClick={() => setSelected(c)}
-                    className="group cursor-pointer p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
+              {clients.length === 0 ? (
+                <Card className="col-span-full p-12 text-center">
+                  <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+                  <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
+                  <p className="text-muted-foreground">
+                    New clients who register will be automatically assigned to you.
+                  </p>
+                </Card>
+              ) : (
+                clients.map((c, i) => (
+                  <motion.div
+                    key={c.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.05 }}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand text-sm font-semibold text-white">
-                        {c.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")}
+                    <Card
+                      onClick={() => setSelected(c)}
+                      className="group cursor-pointer p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand text-sm font-semibold text-white">
+                          {c.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")}
+                        </div>
+                        <div>
+                          <p className="font-semibold">{c.name}</p>
+                          <p className="text-xs text-muted-foreground">Last active {c.lastActive}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-semibold">{c.name}</p>
-                        <p className="text-xs text-muted-foreground">Last active {c.lastActive}</p>
+                      <div className="mt-5 grid grid-cols-2 gap-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground">Streak</p>
+                          <p className="text-xl font-bold">{c.streak}d</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground">Completion</p>
+                          <p className="text-xl font-bold text-gradient-brand">{c.completion}%</p>
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-5 grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Streak</p>
-                        <p className="text-xl font-bold">{c.streak}d</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Completion</p>
-                        <p className="text-xl font-bold text-gradient-brand">{c.completion}%</p>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
+                    </Card>
+                  </motion.div>
+                ))
+              )}
             </div>
           </>
         )}

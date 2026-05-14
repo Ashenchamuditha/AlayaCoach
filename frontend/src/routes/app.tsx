@@ -21,6 +21,26 @@ import { AIAssistant } from "@/components/AIAssistant";
 import { StopwatchTimer } from "@/components/StopwatchTimer";
 import { AddGoalDialog, type NewGoalInput } from "@/components/AddGoalDialog";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "sonner";
+import { Trash2, Edit2, Clock, Calendar } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/store/auth";
 
@@ -37,10 +57,13 @@ export const Route = createFileRoute("/app")({
 interface Goal {
   id: string;
   title: string;
+  description?: string;
   done: boolean;
   category?: string;
   priority?: "low" | "medium" | "high";
   dueDate?: string;
+  startTime?: string;
+  endTime?: string;
   durationMinutes?: number;
 }
 
@@ -53,34 +76,140 @@ interface DashboardData {
   coachName: string;
 }
 
-const demoData: DashboardData = {
-  goals: [
-    { id: "1", title: "Morning meditation (10 min)", done: true },
-    { id: "2", title: "Workout — strength training", done: false },
-    { id: "3", title: "Deep work block (90 min)", done: false },
-    { id: "4", title: "Read 20 pages", done: false },
-  ],
-  aiFeedback:
-    "You're on a 6-day streak — momentum is building. Try anchoring your deep work right after meditation to stack wins early.",
-  streak: 6,
-  weekly: [
-    { day: "Mon", score: 60 },
-    { day: "Tue", score: 75 },
-    { day: "Wed", score: 80 },
-    { day: "Thu", score: 70 },
-    { day: "Fri", score: 90 },
-    { day: "Sat", score: 85 },
-    { day: "Sun", score: 95 },
-  ],
-  coachId: "demo-coach",
-  coachName: "Coach Maya",
-};
+function GoalDetailDialog({ 
+  goal, 
+  onClose, 
+  onUpdate, 
+  onDelete 
+}: { 
+  goal: Goal | null, 
+  onClose: () => void, 
+  onUpdate: (g: Goal) => void,
+  onDelete: (id: string) => void
+}) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<Goal | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (goal) {
+      setForm({ ...goal });
+      setEditing(false);
+    }
+  }, [goal]);
+
+  if (!goal || !form) return null;
+
+  const handleUpdate = async () => {
+    setSaving(true);
+    try {
+      const { data } = await api.put(`/goals/${goal.id}`, form);
+      onUpdate({ ...data, id: String(data.id) });
+      toast.success("Goal updated");
+      setEditing(false);
+    } catch {
+      toast.error("Failed to update goal");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm("Are you sure you want to delete this goal?")) return;
+    try {
+      await api.delete(`/goals/${goal.id}`);
+      onDelete(goal.id);
+      toast.success("Goal deleted");
+      onClose();
+    } catch {
+      toast.error("Failed to delete goal");
+    }
+  };
+
+  return (
+    <Dialog open={!!goal} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <div className="flex items-center justify-between pr-6">
+            <DialogTitle>{editing ? "Edit Goal" : goal.title}</DialogTitle>
+            {!editing && (
+              <div className="flex gap-2">
+                <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
+                  <Edit2 className="h-4 w-4" />
+                </Button>
+                <Button size="icon" variant="ghost" onClick={handleDelete} className="text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogDescription>
+            {editing ? "Modify your goal details below." : goal.description || "No description provided."}
+          </DialogDescription>
+        </DialogHeader>
+
+        {editing ? (
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label>Title</Label>
+              <Input value={form.title} onChange={e => setForm({...form, title: e.target.value})} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Description</Label>
+              <Textarea value={form.description || ""} onChange={e => setForm({...form, description: e.target.value})} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>Priority</Label>
+                <Select value={form.priority} onValueChange={v => setForm({...form, priority: v as any})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="low">Low</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
+                    <SelectItem value="high">High</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Category</Label>
+                <Input value={form.category} onChange={e => setForm({...form, category: e.target.value})} />
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4 py-4">
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline"><Calendar className="mr-1 h-3 w-3" /> {goal.dueDate || "Today"}</Badge>
+              <Badge variant="outline"><Clock className="mr-1 h-3 w-3" /> {goal.startTime} - {goal.endTime}</Badge>
+              <Badge variant="secondary">{goal.durationMinutes} min</Badge>
+              <Badge variant={goal.priority === "high" ? "destructive" : "default"}>{goal.priority}</Badge>
+            </div>
+          </div>
+        )}
+
+        <DialogFooter>
+          {editing ? (
+            <>
+              <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button onClick={handleUpdate} disabled={saving} className="bg-gradient-brand text-white">
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+            </>
+          ) : (
+            <Button onClick={onClose}>Close</Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 function ClientDashboard() {
-  const { user, hydrate } = useAuth();
+  const { user, hydrate, logout } = useAuth();
   const navigate = useNavigate();
   const [data, setData] = useState<DashboardData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
   useEffect(() => {
     hydrate();
@@ -88,7 +217,7 @@ function ClientDashboard() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!useAuth.getState().user) navigate({ to: "/login" });
+      if (!useAuth.getState().user) navigate({ to: "/login", replace: true });
     }, 50);
     return () => clearTimeout(t);
   }, [navigate]);
@@ -138,12 +267,17 @@ function ClientDashboard() {
 
   const completed = data.goals.filter((g) => g.done).length;
 
+  const toggle = async (id: string) => {
+    const goal = data.goals.find((g) => g.id === id);
     if (!goal) return;
     const next = !goal.done;
-    setData((d) => ({
-      ...d,
-      goals: d.goals.map((g) => (g.id === id ? { ...g, done: next } : g)),
-    }));
+    setData((d) => {
+      if (!d) return null;
+      return {
+        ...d,
+        goals: d.goals.map((g) => (g.id === id ? { ...g, done: next } : g)),
+      };
+    });
     if (next) {
       confetti({ particleCount: 80, spread: 70, origin: { y: 0.6 } });
     }
@@ -155,25 +289,25 @@ function ClientDashboard() {
   };
 
   const addGoal = (g: NewGoalInput & { id: string }) => {
-    setData((d) => ({
-      ...d,
-      goals: [
-        ...d.goals,
-        {
-          id: g.id,
-          title: g.title,
-          done: false,
-          category: g.category,
-          priority: g.priority,
-          dueDate: g.dueDate,
-          durationMinutes: g.durationMinutes,
-        },
-      ],
-    }));
+    setData((d) => {
+      if (!d) return null;
+      return {
+        ...d,
+        goals: [
+          ...d.goals,
+          {
+            id: g.id,
+            title: g.title,
+            done: false,
+            category: g.category,
+            priority: g.priority,
+            dueDate: g.dueDate,
+            durationMinutes: g.durationMinutes,
+          },
+        ],
+      };
+    });
   };
-
-  if (!user) return null;
-  const completed = data.goals.filter((g) => g.done).length;
 
   return (
     <div className="flex min-h-screen flex-col">

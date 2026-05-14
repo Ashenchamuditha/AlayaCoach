@@ -4,7 +4,7 @@ import SockJS from "sockjs-client";
 export interface ChatMessage {
   id?: string;
   senderId: string;
-  recipientId: string;
+  receiverId: string;
   content: string;
   timestamp: string;
   read?: boolean;

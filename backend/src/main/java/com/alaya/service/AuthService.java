@@ -28,12 +28,21 @@ public class AuthService {
         if (req.getFullName() == null || req.getFullName().isBlank()) {
             throw new IllegalArgumentException("Full name is required for registration");
         }
+        Long coachId = req.getCoachId();
+        if (Role.valueOf(req.getRole().toUpperCase()) == Role.CLIENT && coachId == null) {
+            coachId = userRepository.findAll().stream()
+                    .filter(u -> u.getRole() == Role.COACH)
+                    .map(User::getId)
+                    .findFirst()
+                    .orElse(null);
+        }
+
         User user = User.builder()
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .fullName(req.getFullName())
                 .role(Role.valueOf(req.getRole().toUpperCase()))
-                .coachId(req.getCoachId())
+                .coachId(coachId)
                 .build();
         userRepository.save(user);
         String token = jwtUtils.generateToken(user);

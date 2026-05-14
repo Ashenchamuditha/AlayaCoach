@@ -30,6 +30,8 @@ export interface NewGoalInput {
   category: string;
   priority: "low" | "medium" | "high";
   dueDate: string;
+  startTime: string;
+  endTime: string;
   durationMinutes: number;
 }
 
@@ -39,7 +41,9 @@ const schema = z.object({
   category: z.string().trim().min(1, "Category is required"),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.string().min(1, "Due date is required"),
-  durationMinutes: z.coerce.number().int().min(1, "Min 1 minute").max(600),
+  startTime: z.string().min(1, "Start time is required"),
+  endTime: z.string().min(1, "End time is required"),
+  durationMinutes: z.coerce.number().int().min(1, "Min 1 minute").max(1440),
 });
 
 interface Props {
@@ -55,9 +59,31 @@ export function AddGoalDialog({ onAdd }: Props) {
     category: "Wellness",
     priority: "medium",
     dueDate: new Date().toISOString().slice(0, 10),
-    durationMinutes: 30,
+    startTime: "09:00",
+    endTime: "10:00",
+    durationMinutes: 60,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const calculateDuration = (start: string, end: string) => {
+    try {
+      const [sh, sm] = start.split(":").map(Number);
+      const [eh, em] = end.split(":").map(Number);
+      const startTotal = sh * 60 + sm;
+      const endTotal = eh * 60 + em;
+      let diff = endTotal - startTotal;
+      if (diff < 0) diff += 1440; // overnight
+      return diff;
+    } catch {
+      return 0;
+    }
+  };
+
+  const updateTime = (key: "startTime" | "endTime", val: string) => {
+    const nextForm = { ...form, [key]: val };
+    const dur = calculateDuration(nextForm.startTime, nextForm.endTime);
+    setForm({ ...nextForm, durationMinutes: dur });
+  };
 
   const reset = () =>
     setForm({
@@ -66,7 +92,9 @@ export function AddGoalDialog({ onAdd }: Props) {
       category: "Wellness",
       priority: "medium",
       dueDate: new Date().toISOString().slice(0, 10),
-      durationMinutes: 30,
+      startTime: "09:00",
+      endTime: "10:00",
+      durationMinutes: 60,
     });
 
   const submit = async (e: React.FormEvent) => {
@@ -179,6 +207,28 @@ export function AddGoalDialog({ onAdd }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
+              <Label htmlFor="startTime">Start time *</Label>
+              <Input
+                id="startTime"
+                type="time"
+                value={form.startTime}
+                onChange={(e) => updateTime("startTime", e.target.value)}
+              />
+              {errors.startTime && <p className="text-xs text-destructive">{errors.startTime}</p>}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="endTime">End time *</Label>
+              <Input
+                id="endTime"
+                type="time"
+                value={form.endTime}
+                onChange={(e) => updateTime("endTime", e.target.value)}
+              />
+              {errors.endTime && <p className="text-xs text-destructive">{errors.endTime}</p>}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
               <Label htmlFor="dueDate">Due date *</Label>
               <Input
                 id="dueDate"
@@ -189,20 +239,10 @@ export function AddGoalDialog({ onAdd }: Props) {
               {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="duration">Duration (min) *</Label>
-              <Input
-                id="duration"
-                type="number"
-                min={1}
-                max={600}
-                value={form.durationMinutes}
-                onChange={(e) =>
-                  setForm({ ...form, durationMinutes: Number(e.target.value) })
-                }
-              />
-              {errors.durationMinutes && (
-                <p className="text-xs text-destructive">{errors.durationMinutes}</p>
-              )}
+              <Label>Duration (calculated)</Label>
+              <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
+                {form.durationMinutes} minutes
+              </div>
             </div>
           </div>
           <DialogFooter>

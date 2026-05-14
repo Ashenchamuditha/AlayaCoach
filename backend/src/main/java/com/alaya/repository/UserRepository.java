@@ -10,5 +10,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
     List<User> findAllByCoachId(Long coachId);
+    List<User> findAllByRole(com.alaya.model.Role role);
     long countByRole(com.alaya.model.Role role);
 }

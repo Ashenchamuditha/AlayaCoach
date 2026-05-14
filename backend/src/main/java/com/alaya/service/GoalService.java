@@ -19,7 +19,8 @@ public class GoalService {
     private final UserRepository userRepository;
 
     public Goal createGoal(String title, String description, Long clientId, Long coachId, 
-                           String category, String priority, String dueDate, Integer durationMinutes) {
+                           String category, String priority, String dueDate, Integer durationMinutes,
+                           String startTime, String endTime) {
         
         LocalDateTime parsedDueDate = null;
         if (dueDate != null && !dueDate.isBlank()) {
@@ -44,7 +45,48 @@ public class GoalService {
                 .priority(p)
                 .dueDate(parsedDueDate)
                 .durationMinutes(durationMinutes)
+                .startTime(startTime)
+                .endTime(endTime)
                 .build());
+    }
+
+    public Goal updateGoal(Long goalId, String title, String description, String category, String priority, 
+                           String dueDate, Integer durationMinutes, String startTime, String endTime, Long userId) {
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new IllegalArgumentException("Goal not found"));
+        
+        // Only the client or their coach can update
+        if (!goal.getClientId().equals(userId) && !goal.getCoachId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to update this goal");
+        }
+
+        goal.setTitle(title);
+        goal.setDescription(description);
+        goal.setCategory(category);
+        if (priority != null) {
+            try { goal.setPriority(Goal.GoalPriority.valueOf(priority.toUpperCase())); } catch (Exception e) {}
+        }
+        if (dueDate != null && !dueDate.isBlank()) {
+            try {
+                goal.setDueDate(LocalDateTime.parse(dueDate.endsWith("Z") ? dueDate.substring(0, dueDate.length()-1) : dueDate));
+            } catch (Exception e) {}
+        }
+        goal.setDurationMinutes(durationMinutes);
+        goal.setStartTime(startTime);
+        goal.setEndTime(endTime);
+
+        return goalRepository.save(goal);
+    }
+
+    public void deleteGoal(Long goalId, Long userId) {
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new IllegalArgumentException("Goal not found"));
+        
+        if (!goal.getClientId().equals(userId) && !goal.getCoachId().equals(userId)) {
+            throw new AccessDeniedException("Not authorized to delete this goal");
+        }
+        
+        goalRepository.delete(goal);
     }
 
     public List<Goal> getGoalsForClient(Long clientId) {
