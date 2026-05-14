@@ -1,0 +1,14 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "Spring Boot-MasterCoachApplication<alaya-master-coach>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.alaya.MasterCoachApplication",
+            "projectName": "alaya-master-coach",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

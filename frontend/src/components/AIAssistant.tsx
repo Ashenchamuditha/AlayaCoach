@@ -1,0 +1,182 @@
+import { useEffect, useRef, useState } from "react";
+import { Send, Sparkles } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+
+interface AIMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
+const suggestions = [
+  "Help me plan tomorrow",
+  "I'm feeling unmotivated",
+  "Suggest a 20-minute workout",
+  "How do I stay consistent?",
+];
+
+const fallbackReply = (text: string) => {
+  const t = text.toLowerCase();
+  if (t.includes("motivat") || t.includes("unmotivat"))
+    return "Motivation follows action. Pick the smallest possible version of your next goal — 2 minutes is enough — and start a timer. Momentum will do the rest.";
+  if (t.includes("plan"))
+    return "Block your day in 3 chunks: a 90-min deep work session in the morning, one health habit at midday, and a short reflection at night. Want me to draft it?";
+  if (t.includes("workout"))
+    return "Try this 20-min set: 5 min mobility, 3 rounds of (10 push-ups, 15 squats, 30s plank), 5 min cooldown. Hydrate well.";
+  if (t.includes("consist"))
+    return "Consistency = anchor + small + visible. Anchor the habit to an existing routine, keep it tiny, and track it where you'll see it daily.";
+  return "Great question. Break it into a single next action you can do in under 5 minutes — then tell me how it went.";
+};
+
+export function AIAssistant() {
+  const [messages, setMessages] = useState<AIMessage[]>([
+    {
+      id: "welcome",
+      role: "assistant",
+      content:
+        "Hi! I'm your AI Assistant. Ask me about your goals, habits, focus, mindset, or anything you're working on.",
+      timestamp: new Date().toISOString(),
+    },
+  ]);
+  const [text, setText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
+  }, [messages, loading]);
+
+  const send = async (raw?: string) => {
+    const content = (raw ?? text).trim();
+    if (!content || loading) return;
+    const userMsg: AIMessage = {
+      id: crypto.randomUUID(),
+      role: "user",
+      content,
+      timestamp: new Date().toISOString(),
+    };
+    setMessages((p) => [...p, userMsg]);
+    setText("");
+    setLoading(true);
+    try {
+      const r = await api.post<{ reply: string }>("/chat/ai", { message: content });
+      setMessages((p) => [
+        ...p,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: r.data.reply,
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } catch {
+      await new Promise((r) => setTimeout(r, 600));
+      setMessages((p) => [
+        ...p,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: fallbackReply(content),
+          timestamp: new Date().toISOString(),
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="flex h-[600px] flex-col overflow-hidden p-0">
+      <div className="flex items-center gap-3 border-b border-border bg-gradient-soft px-4 py-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white">
+          <Sparkles className="h-5 w-5" />
+        </div>
+        <div>
+          <p className="text-sm font-semibold">AI Assistant</p>
+          <p className="text-xs text-muted-foreground">Always here to help</p>
+        </div>
+      </div>
+
+      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-muted/30 p-4">
+        <AnimatePresence initial={false}>
+          {messages.map((m) => {
+            const mine = m.role === "user";
+            return (
+              <motion.div
+                key={m.id}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={cn("flex", mine ? "justify-end" : "justify-start")}
+              >
+                <div
+                  className={cn(
+                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                    mine
+                      ? "rounded-br-sm bg-gradient-brand text-white"
+                      : "rounded-bl-sm border border-border bg-card text-foreground",
+                  )}
+                >
+                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+        {loading && (
+          <div className="flex justify-start">
+            <div className="rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-2 text-sm">
+              <span className="inline-flex gap-1">
+                <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.2s]" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.1s]" />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-primary" />
+              </span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {messages.length <= 1 && (
+        <div className="flex flex-wrap gap-2 border-t border-border bg-background px-3 py-2">
+          {suggestions.map((s) => (
+            <button
+              key={s}
+              onClick={() => send(s)}
+              className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:bg-muted"
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          send();
+        }}
+        className="flex items-center gap-2 border-t border-border bg-background p-3"
+      >
+        <Input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder="Ask the AI Assistant..."
+          className="flex-1"
+        />
+        <Button
+          type="submit"
+          size="icon"
+          disabled={loading}
+          className="bg-gradient-brand text-white hover:opacity-90"
+        >
+          <Send className="h-4 w-4" />
+        </Button>
+      </form>
+    </Card>
+  );
+}
