@@ -23,25 +23,17 @@ export function ChatInterface({ peerId, peerName }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!token || !user) return;
+    if (!token || !user || !peerId) return;
     api
       .get<ChatMessage[]>(`/chat/history/${peerId}`)
       .then((r) => setMessages(r.data ?? []))
       .catch(() => {
-        // demo fallback
-        setMessages([
-          {
-            senderId: peerId,
-            receiverId: user.id,
-            content: `Hi ${user.name.split(" ")[0]}! Ready for today's check-in?`,
-            timestamp: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
-            read: true,
-          },
-        ]);
+        // fallback deleted for real integration
       });
 
     const c = createChatClient(token, (m) => {
-      if (m.senderId === peerId || m.receiverId === peerId) {
+      // Use == to handle string vs number comparison
+      if (String(m.senderId) === String(peerId) || String(m.receiverId) === String(peerId)) {
         setMessages((prev) => [...prev, m]);
       }
     });
@@ -57,28 +49,32 @@ export function ChatInterface({ peerId, peerName }: Props) {
   }, [messages]);
 
   const send = async () => {
-    if (!text.trim() || !user) return;
-    const msg: ChatMessage = {
-      senderId: user.id,
-      receiverId: peerId,
-      content: text.trim(),
-      timestamp: new Date().toISOString(),
-      read: false,
-    };
-    setMessages((p) => [...p, msg]);
+    if (!text.trim() || !user || !peerId) return;
+    const content = text.trim();
     setText("");
+
     try {
-      if (clientRef.current?.connected) {
-        clientRef.current.publish({
-          destination: "/app/chat.send",
-          body: JSON.stringify(msg),
-        });
-      }
-      await api.post("/chat/send", msg);
-    } catch {
-      // ignore for demo
+      await api.post("/chat/send", {
+        receiverId: peerId,
+        content: content
+      });
+    } catch (err) {
+      console.error("Failed to send message:", err);
     }
   };
+
+  if (!peerId) {
+    return (
+      <Card className="flex h-[400px] items-center justify-center p-6 text-center">
+        <div>
+          <p className="text-lg font-semibold text-muted-foreground">No coach assigned yet.</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Once a coach is assigned to you, you can chat with them here.
+          </p>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card className="flex h-[600px] flex-col overflow-hidden p-0">

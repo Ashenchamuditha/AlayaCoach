@@ -121,6 +121,11 @@ function RegisterPage() {
                 Sign in
               </Link>
             </p>
+            <div className="mt-4 border-t border-border/40 pt-4 text-center">
+              <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition">
+                ← Back to Home
+              </Link>
+            </div>
           </Card>
         </motion.div>
       </main>

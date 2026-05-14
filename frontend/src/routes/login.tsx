@@ -96,7 +96,12 @@ function LoginPage() {
                 Create one
               </Link>
             </p>
-            <p className="mt-2 text-center text-xs text-muted-foreground">
+            <div className="mt-4 border-t border-border/40 pt-4 text-center">
+              <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition">
+                ← Back to Home
+              </Link>
+            </div>
+            <p className="mt-4 text-center text-xs text-muted-foreground">
               Tip: include "coach" in email to log in as coach (demo).
             </p>
           </Card>

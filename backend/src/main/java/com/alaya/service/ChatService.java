@@ -28,20 +28,23 @@ public class ChatService {
     private final SimpMessagingTemplate messagingTemplate;
 
     /**
-     * Validate that sender and receiver are in the same coaching relationship.
-     * Either: sender is a coach and receiver is their client,
-     *      OR: sender is a client and receiver is their coach.
+     * Validate that sender and receiver can exchange messages.
+     * Rule: A COACH can chat with any CLIENT.
+     *       A CLIENT must be assigned to the COACH they are chatting with.
      */
     private void validateChatAuthorization(User sender, User receiver) {
+        if (sender == null || receiver == null || sender.getRole() == null || receiver.getRole() == null) {
+            throw new AccessDeniedException("Invalid user or role for chat");
+        }
+
         boolean valid = switch (sender.getRole()) {
-            case COACH -> receiver.getCoachId() != null
-                          && receiver.getCoachId().equals(sender.getId());
+            case COACH -> receiver.getRole() == com.alaya.model.Role.CLIENT;
             case CLIENT -> sender.getCoachId() != null
                            && sender.getCoachId().equals(receiver.getId());
         };
         if (!valid) {
             throw new AccessDeniedException(
-                "Chat is only allowed between a coach and their assigned client");
+                "Chat is only allowed between a coach and a client");
         }
     }
 
@@ -61,13 +64,21 @@ public class ChatService {
 
         ChatMessageDto dto = toDto(msg);
 
-        // Push message in real-time to receiver's private STOMP queue
-        // Frontend subscribes to: /user/queue/messages
+        // Push message in real-time to BOTH sender and receiver
+        // This ensures the sender's UI updates correctly when using REST fallback
         messagingTemplate.convertAndSendToUser(
-                receiver.getEmail(),  // Spring uses the principal name as user identifier
+                sender.getEmail(),
                 "/queue/messages",
                 dto
         );
+        
+        if (!senderId.equals(receiverId)) {
+            messagingTemplate.convertAndSendToUser(
+                    receiver.getEmail(),
+                    "/queue/messages",
+                    dto
+            );
+        }
 
         return dto;
     }

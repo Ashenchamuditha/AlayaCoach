@@ -30,9 +30,12 @@ export interface NewGoalInput {
   category: string;
   priority: "low" | "medium" | "high";
   dueDate: string;
+  endDate: string;
   startTime: string;
   endTime: string;
   durationMinutes: number;
+  targetValue?: number;
+  targetUnit?: string;
 }
 
 const schema = z.object({
@@ -41,9 +44,12 @@ const schema = z.object({
   category: z.string().trim().min(1, "Category is required"),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.string().min(1, "Due date is required"),
+  endDate: z.string().min(1, "End date is required"),
   startTime: z.string().min(1, "Start time is required"),
   endTime: z.string().min(1, "End time is required"),
   durationMinutes: z.coerce.number().int().min(1, "Min 1 minute").max(1440),
+  targetValue: z.coerce.number().optional(),
+  targetUnit: z.string().optional(),
 });
 
 interface Props {
@@ -59,9 +65,12 @@ export function AddGoalDialog({ onAdd }: Props) {
     category: "Wellness",
     priority: "medium",
     dueDate: new Date().toISOString().slice(0, 10),
+    endDate: new Date().toISOString().slice(0, 10),
     startTime: "09:00",
     endTime: "10:00",
     durationMinutes: 60,
+    targetValue: 0,
+    targetUnit: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -92,9 +101,12 @@ export function AddGoalDialog({ onAdd }: Props) {
       category: "Wellness",
       priority: "medium",
       dueDate: new Date().toISOString().slice(0, 10),
+      endDate: new Date().toISOString().slice(0, 10),
       startTime: "09:00",
       endTime: "10:00",
       durationMinutes: 60,
+      targetValue: 0,
+      targetUnit: "",
     });
 
   const submit = async (e: React.FormEvent) => {
@@ -110,17 +122,14 @@ export function AddGoalDialog({ onAdd }: Props) {
     }
     setErrors({});
     setSubmitting(true);
-    const id = crypto.randomUUID();
     try {
-      try {
-        await api.post("/goals", parsed.data);
-      } catch {
-        // demo offline
-      }
-      onAdd({ ...parsed.data, id });
+      const { data } = await api.post("/goals", parsed.data);
+      onAdd({ ...parsed.data, id: String(data.id) });
       toast.success("Goal added");
       reset();
       setOpen(false);
+    } catch {
+      toast.error("Failed to add goal");
     } finally {
       setSubmitting(false);
     }
@@ -134,7 +143,7 @@ export function AddGoalDialog({ onAdd }: Props) {
           Add goal
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md overflow-y-auto max-h-[90vh]">
         <DialogHeader>
           <DialogTitle>Add a new goal</DialogTitle>
           <DialogDescription>
@@ -234,7 +243,7 @@ export function AddGoalDialog({ onAdd }: Props) {
                 id="dueDate"
                 type="date"
                 value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                onChange={(e) => setForm({ ...form, dueDate: e.target.value, endDate: e.target.value })}
               />
               {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
             </div>
@@ -243,6 +252,27 @@ export function AddGoalDialog({ onAdd }: Props) {
               <div className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-muted-foreground">
                 {form.durationMinutes} minutes
               </div>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="targetValue">Target Value</Label>
+              <Input
+                id="targetValue"
+                type="number"
+                value={form.targetValue}
+                onChange={(e) => setForm({ ...form, targetValue: Number(e.target.value) })}
+                placeholder="e.g. 100"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="targetUnit">Target Unit</Label>
+              <Input
+                id="targetUnit"
+                value={form.targetUnit}
+                onChange={(e) => setForm({ ...form, targetUnit: e.target.value })}
+                placeholder="e.g. kcal, km"
+              />
             </div>
           </div>
           <DialogFooter>

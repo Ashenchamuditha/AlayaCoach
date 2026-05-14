@@ -45,6 +45,9 @@ public class Goal {
 
     private Integer durationMinutes;
 
+    private Double targetValue;
+    private String targetUnit;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();

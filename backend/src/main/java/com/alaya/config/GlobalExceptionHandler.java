@@ -22,11 +22,22 @@ public class GlobalExceptionHandler {
         return createErrorResponse("Invalid password. Please try again.", HttpStatus.UNAUTHORIZED);
     }
 
+    @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, String>> handleValidationException(org.springframework.web.bind.MethodArgumentNotValidException ex) {
+        String errorMsg = ex.getBindingResult().getFieldErrors().stream()
+                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .collect(java.util.stream.Collectors.joining(", "));
+        return createErrorResponse("Validation failed: " + errorMsg, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         String message = ex.getMessage();
         if (message != null && message.contains("User not found")) {
             return createErrorResponse("Username not found. Please register first.", HttpStatus.NOT_FOUND);
+        }
+        if (ex instanceof org.springframework.web.servlet.resource.NoResourceFoundException) {
+            return createErrorResponse("Resource not found: " + message, HttpStatus.NOT_FOUND);
         }
         return createErrorResponse("An unexpected error occurred: " + ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
     }

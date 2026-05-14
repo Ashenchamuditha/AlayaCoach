@@ -2,9 +2,9 @@ import { Client, type IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
 
 export interface ChatMessage {
-  id?: string;
-  senderId: string;
-  receiverId: string;
+  id?: string | number;
+  senderId: string | number;
+  receiverId: string | number;
   content: string;
   timestamp: string;
   read?: boolean;

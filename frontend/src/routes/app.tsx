@@ -74,6 +74,8 @@ interface DashboardData {
   weekly: { day: string; score: number }[];
   coachId: string;
   coachName: string;
+  lastMessage?: string;
+  unreadCount?: number;
 }
 
 function GoalDetailDialog({ 
@@ -353,14 +355,19 @@ function ClientDashboard() {
                   </div>
                 </div>
               </Card>
-              <Card className="p-6">
+              <Card className="relative p-6">
+                {!!data.unreadCount && data.unreadCount > 0 && (
+                  <div className="absolute -right-2 -top-2 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-lg animate-pulse">
+                    {data.unreadCount > 9 ? "9+" : data.unreadCount}
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-brand text-white">
                     <Sparkles className="h-5 w-5" />
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Coach</p>
-                    <p className="text-2xl font-bold">{data.coachName}</p>
+                  <div className="flex-1 overflow-hidden">
+                    <p className="text-xs text-muted-foreground">Coach {data.coachName}</p>
+                    <p className="text-sm font-medium line-clamp-1">{data.lastMessage || "No messages yet"}</p>
                   </div>
                 </div>
               </Card>

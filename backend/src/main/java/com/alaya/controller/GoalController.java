@@ -27,9 +27,12 @@ public class GoalController {
         String category;
         String priority;
         String dueDate;
+        String endDate; // frontend might send as endDate
         Integer durationMinutes;
         String startTime;
         String endTime;
+        Double targetValue;
+        String targetUnit;
     }
 
     @PostMapping
@@ -40,6 +43,9 @@ public class GoalController {
         
         if (coachId == null) coachId = 1L; 
 
+        // Map endDate to dueDate if dueDate is null
+        String finalDate = req.getDueDate() != null ? req.getDueDate() : req.getEndDate();
+
         Goal goal = goalService.createGoal(
             req.getTitle(), 
             req.getDescription(), 
@@ -47,10 +53,12 @@ public class GoalController {
             coachId,
             req.getCategory(),
             req.getPriority(),
-            req.getDueDate(),
+            finalDate,
             req.getDurationMinutes(),
             req.getStartTime(),
-            req.getEndTime()
+            req.getEndTime(),
+            req.getTargetValue(),
+            req.getTargetUnit()
         );
         return ResponseEntity.ok(goal);
     }
@@ -59,18 +67,28 @@ public class GoalController {
     public ResponseEntity<Goal> updateGoal(@PathVariable Long goalId,
                                            @RequestBody GoalRequest req,
                                            @AuthenticationPrincipal User user) {
+        String finalDate = req.getDueDate() != null ? req.getDueDate() : req.getEndDate();
         return ResponseEntity.ok(goalService.updateGoal(
             goalId,
             req.getTitle(),
             req.getDescription(),
             req.getCategory(),
             req.getPriority(),
-            req.getDueDate(),
+            finalDate,
             req.getDurationMinutes(),
             req.getStartTime(),
             req.getEndTime(),
+            req.getTargetValue(),
+            req.getTargetUnit(),
             user.getId()
         ));
+    }
+
+    @PatchMapping("/{goalId}/toggle")
+    public ResponseEntity<Goal> toggleStatus(@PathVariable Long goalId,
+                                             @RequestParam boolean completed,
+                                             @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(goalService.toggleGoalStatus(goalId, completed, user.getId()));
     }
 
     @DeleteMapping("/{goalId}")

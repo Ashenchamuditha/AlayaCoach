@@ -34,6 +34,8 @@ interface Client {
   streak: number;
   completion: number;
   lastActive: string;
+  lastMessage?: string;
+  unreadCount?: number;
   weekly: { day: string; score: number }[];
 }
 
@@ -205,8 +207,13 @@ function CoachDashboard() {
                   >
                     <Card
                       onClick={() => setSelected(c)}
-                      className="group cursor-pointer p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
+                      className="group relative cursor-pointer p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
                     >
+                      {!!c.unreadCount && c.unreadCount > 0 && (
+                        <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-lg animate-pulse">
+                          {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                        </div>
+                      )}
                       <div className="flex items-center gap-3">
                         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand text-sm font-semibold text-white">
                           {c.name
@@ -218,6 +225,14 @@ function CoachDashboard() {
                           <p className="font-semibold">{c.name}</p>
                           <p className="text-xs text-muted-foreground">Last active {c.lastActive}</p>
                         </div>
+                      </div>
+                      <div className="mt-4">
+                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
+                          <MessageCircle className="h-3 w-3" /> Recent Message
+                        </p>
+                        <p className="text-sm line-clamp-1 mt-0.5 text-muted-foreground">
+                          {c.lastMessage || "No messages yet"}
+                        </p>
                       </div>
                       <div className="mt-5 grid grid-cols-2 gap-4">
                         <div>

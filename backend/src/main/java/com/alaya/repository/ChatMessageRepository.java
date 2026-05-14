@@ -35,5 +35,13 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
         """)
     int markAsRead(@Param("senderId") Long senderId, @Param("receiverId") Long receiverId);
 
+    @Query(value = """
+        SELECT * FROM chat_messages m
+        WHERE (m.sender_id = :userId AND m.receiver_id = :otherId)
+           OR (m.sender_id = :otherId AND m.receiver_id = :userId)
+        ORDER BY m.timestamp DESC LIMIT 1
+        """, nativeQuery = true)
+    ChatMessage findLastMessage(@Param("userId") Long userId, @Param("otherId") Long otherId);
+
     long countBySenderIdAndReceiverIdAndReadFalse(Long senderId, Long receiverId);
 }

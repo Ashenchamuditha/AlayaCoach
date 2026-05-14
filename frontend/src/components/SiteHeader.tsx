@@ -1,4 +1,4 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { Moon, Sun, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/store/theme";
@@ -9,6 +9,12 @@ export function SiteHeader() {
   const user = useAuth((s) => s.user);
   const logout = useAuth((s) => s.logout);
   const path = useRouterState({ select: (r) => r.location.pathname });
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate({ to: "/" });
+  };
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-background/70 backdrop-blur-xl">
@@ -27,11 +33,15 @@ export function SiteHeader() {
           {user ? (
             <>
               {user.role === "COACH" ? (
-                <Button asChild variant="ghost"><Link to="/coach">Dashboard</Link></Button>
+                <Link to="/coach" className={path === "/coach" ? "hidden" : ""}>
+                  <Button variant="ghost">Dashboard</Button>
+                </Link>
               ) : (
-                <Button asChild variant="ghost"><Link to="/app">Dashboard</Link></Button>
+                <Link to="/app" className={path === "/app" ? "hidden" : ""}>
+                  <Button variant="ghost">Dashboard</Button>
+                </Link>
               )}
-              <Button variant="outline" onClick={logout}>Logout</Button>
+              <Button variant="outline" onClick={handleLogout}>Logout</Button>
             </>
           ) : (
             path !== "/login" && path !== "/register" ? (
