@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/SiteHeader";
 import { api } from "@/lib/api";
 import { useAuth, type Role } from "@/store/auth";
+import axios from "axios";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -20,12 +21,23 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  const { user, hydrate } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setAuth = useAuth((s) => s.setAuth);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (user) {
+      navigate({ to: user.role === "COACH" ? "/coach" : "/app" });
+    }
+  }, [user, navigate]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,8 +50,12 @@ function LoginPage() {
       }>("/auth/login", { email, password });
       setAuth(data.user, data.token);
       navigate({ to: data.user.role === "COACH" ? "/coach" : "/app" });
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Invalid email or password");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || "Invalid email or password");
+      } else {
+        setError("An unexpected error occurred");
+      }
     } finally {
       setLoading(false);
     }
@@ -56,9 +72,7 @@ function LoginPage() {
         >
           <Card className="p-8 shadow-glow">
             <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Sign in to continue your journey.
-            </p>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to continue your journey.</p>
             <form onSubmit={submit} className="mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>

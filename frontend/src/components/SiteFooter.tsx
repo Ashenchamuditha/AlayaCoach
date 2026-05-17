@@ -14,9 +14,15 @@ export function SiteFooter() {
           © {new Date().getFullYear()} Alaya. Built for accountability.
         </p>
         <div className="flex gap-4 text-sm text-muted-foreground">
-          <a href="#" className="hover:text-foreground transition">Privacy</a>
-          <a href="#" className="hover:text-foreground transition">Terms</a>
-          <a href="#" className="hover:text-foreground transition">Contact</a>
+          <a href="#" className="hover:text-foreground transition">
+            Privacy
+          </a>
+          <a href="#" className="hover:text-foreground transition">
+            Terms
+          </a>
+          <a href="#" className="hover:text-foreground transition">
+            Contact
+          </a>
         </div>
       </div>
     </footer>

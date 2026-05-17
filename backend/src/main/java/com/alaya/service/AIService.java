@@ -1,5 +1,7 @@
 package com.alaya.service;
 
+import com.alaya.repository.CheckinRepository;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,7 +13,6 @@ import java.util.Map;
 
 /**
  * AIService calls the Groq API using Spring WebFlux WebClient (non-blocking).
- * Prompt is always in English and capped at 2 sentences in the instruction.
  */
 @Service
 @Slf4j
@@ -19,6 +20,7 @@ import java.util.Map;
 public class AIService {
 
     private final WebClient.Builder webClientBuilder;
+    private final CheckinRepository checkinRepository;
 
     @Value("${groq.api.url}")
     private String groqApiUrl;
@@ -29,23 +31,119 @@ public class AIService {
     @Value("${groq.api.model}")
     private String groqModel;
 
-    public String generateCheckinFeedback(String clientNote) {
-        return callGroqAI("You are an accountability coach. Respond ONLY in English. " +
-                "Keep your response to a maximum of 2 sentences. " +
-                "Be encouraging, concise, and actionable.", "My check-in note: " + clientNote);
+    @PostConstruct
+    public void testConnection() {
+        log.info("Checking Groq AI connection...");
+        try {
+            String testResponse = callGroqAI("Say 'Connection Successful'", "Test");
+            if (testResponse != null && !testResponse.isEmpty()) {
+                log.info("Groq API connection successful: {}", testResponse);
+                System.out.println("ALAYA SYSTEM: Groq API Connection SUCCESSFUL.");
+            } else {
+                log.warn("Groq API connection test returned empty response.");
+                System.out.println("ALAYA SYSTEM: Groq API Connection WARNING - Empty response.");
+            }
+        } catch (Exception e) {
+            log.error("Groq API connection FAILED: {}", e.getMessage());
+            System.out.println("ALAYA SYSTEM: Groq API Connection FAILED.");
+        }
     }
 
-    public String getAIResponse(String userMessage) {
-        return callGroqAI("You are an accountability coach assistant. Provide helpful, motivating, and strategic advice. " +
-                "Respond in English and keep it under 3 sentences.", userMessage);
+    public String generateCheckinFeedback(String clientNote) {
+        String res = callGroqAI("You are a professional accountability coach. Respond ONLY in English. " +
+                "Keep your response to a maximum of 2 sentences. " +
+                "Be encouraging, concise, and provide immediate actionable advice for fitness, diet, or productivity based on the check-in.", 
+                "My check-in note: " + clientNote);
+        return res != null ? res : "Keep up the great work! You're making progress.";
+    }
+
+    public String generateFoodFeedback(String foodName, String portion) {
+        String portionText = (portion == null || portion.trim().isEmpty()) ? "a normal portion" : portion;
+        String prompt = String.format("I ate %s of %s. Estimate the calories and give me healthy behavioral advice. " +
+                "Respond ONLY with a JSON object in this format: {\"calories\": 123, \"feedback\": \"your advice here\"}", 
+                portionText, foodName);
+        
+        String res = callGroqAI("You are a professional nutritionist. You MUST respond ONLY with valid JSON. " +
+                "The 'feedback' should be encouraging behavioral advice for healthy eating, max 2 sentences.", 
+                prompt);
+        return res != null ? res : "{\"calories\": 0, \"feedback\": \"That's a good choice! Keep monitoring your portions.\"}";
+    }
+
+    public String analyzeFoodImage(String base64Image) {
+        WebClient client = webClientBuilder.build();
+
+        Map<String, Object> body = Map.of(
+            "model", "meta-llama/llama-4-scout-17b-16e-instruct",
+            "messages", List.of(
+                Map.of("role", "user", "content", List.of(
+                    Map.of("type", "text", "text", "Identify the food in this image, estimate total calories, and give healthy behavioral advice. " +
+                            "Respond ONLY with a JSON object: {\"foodName\": \"...\", \"calories\": 123, \"feedback\": \"...\"}"),
+                    Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))
+                ))
+            ),
+            "max_tokens", 300,
+            "temperature", 0.7
+        );
+
+        try {
+            return client.post()
+                    .uri(groqApiUrl)
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("Content-Type", "application/json")
+                    .bodyValue(body)
+                    .retrieve()
+                    .onStatus(status -> status.isError(), response -> 
+                        response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    log.error("Groq Vision AI Error ({}): {}", response.statusCode(), errorBody);
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI call failed"));
+                                })
+                    )
+                    .bodyToMono(Map.class)
+                    .map(response -> {
+                        if (response != null && response.containsKey("choices")) {
+                            List<?> choices = (List<?>) response.get("choices");
+                            if (!choices.isEmpty()) {
+                                Map<?, ?> first = (Map<?, ?>) choices.get(0);
+                                Map<?, ?> message = (Map<?, ?>) first.get("message");
+                                return (String) message.get("content");
+                            }
+                        }
+                        return null;
+                    })
+                    .block();
+        } catch (Exception e) {
+            log.error("Groq Vision AI call failed: {}", e.getMessage());
+        }
+        return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"feedback\": \"We couldn't identify the food. Try logging manually.\"}";
+    }
+
+    public String getAIResponse(String userMessage, String userFullName, Long userId) {
+        StringBuilder context = new StringBuilder();
+        if (userId != null) {
+            var checkins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(userId);
+            if (!checkins.isEmpty()) {
+                context.append("\nRecent User Actions:\n");
+                for (var c : checkins) {
+                    context.append("- ").append(c.getNote()).append("\n");
+                }
+            }
+        }
+
+        String systemPrompt = String.format(
+            "You are the Alaya Master Coach AI Assistant. You are talking to %s. " +
+            "Scope: Fitness, diet plans, workout plans, user goal tracking, and motivational coaching. " +
+            "Rules: 1. ONLY answer questions within the scope. 2. Politely decline out-of-scope questions. 3. Max 3 sentences. 4. Professional and encouraging. " +
+            "%s",
+            userFullName != null ? userFullName : "a user",
+            context.toString()
+        );
+        String res = callGroqAI(systemPrompt, userMessage);
+        return res != null ? res : "I'm here to help! Keep pushing forward toward your goals.";
     }
 
     private String callGroqAI(String systemPrompt, String userMessage) {
-        WebClient client = webClientBuilder
-                .baseUrl(groqApiUrl)
-                .defaultHeader("Authorization", "Bearer " + groqApiKey)
-                .defaultHeader("Content-Type", "application/json")
-                .build();
+        WebClient client = webClientBuilder.build();
 
         Map<String, Object> body = Map.of(
             "model", groqModel,
@@ -53,27 +151,45 @@ public class AIService {
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", userMessage)
             ),
-            "max_tokens", 150
+            "max_tokens", 150,
+            "temperature", 0.7
         );
 
         try {
-            Map<?, ?> response = client.post()
+            return client.post()
+                    .uri(groqApiUrl)
+                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("Content-Type", "application/json")
                     .bodyValue(body)
                     .retrieve()
+                    .onStatus(status -> status.isError(), response -> 
+                        response.bodyToMono(String.class)
+                                .flatMap(errorBody -> {
+                                    log.error("Groq AI API Error ({}): {}", response.statusCode(), errorBody);
+                                    return reactor.core.publisher.Mono.error(org.springframework.web.reactive.function.client.WebClientResponseException.create(
+                                            response.statusCode().value(), 
+                                            "Bad Request", 
+                                            response.headers().asHttpHeaders(), 
+                                            errorBody.getBytes(), 
+                                            java.nio.charset.StandardCharsets.UTF_8));
+                                })
+                    )
                     .bodyToMono(Map.class)
+                    .map(response -> {
+                        if (response != null && response.containsKey("choices")) {
+                            List<?> choices = (List<?>) response.get("choices");
+                            if (!choices.isEmpty()) {
+                                Map<?, ?> first = (Map<?, ?>) choices.get(0);
+                                Map<?, ?> message = (Map<?, ?>) first.get("message");
+                                return (String) message.get("content");
+                            }
+                        }
+                        return null;
+                    })
                     .block();
-
-            if (response != null && response.containsKey("choices")) {
-                List<?> choices = (List<?>) response.get("choices");
-                if (!choices.isEmpty()) {
-                    Map<?, ?> first = (Map<?, ?>) choices.get(0);
-                    Map<?, ?> message = (Map<?, ?>) first.get("message");
-                    return (String) message.get("content");
-                }
-            }
         } catch (Exception e) {
             log.error("Groq AI call failed: {}", e.getMessage());
         }
-        return "I'm here to help! Keep pushing forward toward your goals.";
+        return null;
     }
 }

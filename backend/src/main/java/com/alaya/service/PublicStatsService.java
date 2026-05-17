@@ -16,15 +16,19 @@ public class PublicStatsService {
 
     private final UserRepository userRepository;
     private final GoalRepository goalRepository;
+    private final com.alaya.repository.ChatMessageRepository chatMessageRepository;
 
     public Map<String, Object> getPublicStats() {
-        long totalUsers      = userRepository.count();
+        long activeUsers      = userRepository.countByRole(Role.CLIENT);
         long goalsCompleted  = goalRepository.countByStatus(Goal.GoalStatus.COMPLETED);
-        long activeCoaches   = userRepository.countByRole(Role.COACH);
+        long coaches         = userRepository.countByRole(Role.COACH);
+        long messagesExchanged = chatMessageRepository.count();
+
         return Map.of(
-            "totalUsers",     totalUsers,
-            "goalsCompleted", goalsCompleted,
-            "activeCoaches",  activeCoaches
+            "activeUsers",     activeUsers,
+            "goalsCompleted",  goalsCompleted,
+            "coaches",         coaches,
+            "messagesExchanged", messagesExchanged
         );
     }
 

@@ -45,6 +45,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/error").permitAll()
+                .requestMatchers("/uploads/**").permitAll()
                 // --- WebSocket handshake (STOMP upgrade) ---
                 .requestMatchers("/ws-chat/**").permitAll() // Handshake is public, auth handled in interceptor
                 // --- All other API endpoints require auth ---

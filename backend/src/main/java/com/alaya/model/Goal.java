@@ -54,6 +54,9 @@ public class Goal {
 
     private LocalDateTime completedAt;
 
+    @Column(columnDefinition = "TEXT")
+    private String coachFeedback;
+
     public enum GoalStatus {
         ACTIVE, COMPLETED, CANCELLED
     }

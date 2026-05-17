@@ -1,6 +1,7 @@
 package com.alaya.service;
 
 import com.alaya.model.ChatMessage;
+import com.alaya.model.Checkin;
 import com.alaya.model.Goal;
 import com.alaya.model.User;
 import com.alaya.repository.*;
@@ -18,6 +19,7 @@ public class DashboardService {
     private final GoalRepository goalRepository;
     private final CheckinRepository checkinRepository;
     private final ChatMessageRepository chatMessageRepository;
+    private final CoachFeedbackRepository coachFeedbackRepository;
 
     public Map<String, Object> getCoachDashboard(Long coachId) {
         if (coachId == null) {
@@ -65,7 +67,7 @@ public class DashboardService {
         User client = userRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
         
-        List<Goal> goals = goalRepository.findAllByClientId(clientId);
+        List<Goal> goals = goalRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
         var recentCheckins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(clientId);
         
         String coachName = "No coach assigned";
@@ -98,29 +100,42 @@ public class DashboardService {
             }
         }
 
-        // Mocking streak and weekly for now, but in the right format
-        List<Map<String, Object>> weekly = List.of(
-            Map.of("day", "Mon", "score", 65),
-            Map.of("day", "Tue", "score", 70),
-            Map.of("day", "Wed", "score", 85),
-            Map.of("day", "Thu", "score", 80),
-            Map.of("day", "Fri", "score", 90),
-            Map.of("day", "Sat", "score", 75),
-            Map.of("day", "Sun", "score", 95)
-        );
+        // Real weekly progress based on ALL checkins
+        List<Map<String, Object>> weekly = calculateWeeklyProgress(clientId);
 
         Map<String, Object> response = new java.util.HashMap<>();
         response.put("goals", goals.stream().map(g -> {
             Map<String, Object> map = new java.util.HashMap<>();
             map.put("id", String.valueOf(g.getId()));
             map.put("title", g.getTitle() != null ? g.getTitle() : "Untitled");
+            map.put("description", g.getDescription() != null ? g.getDescription() : "");
             map.put("done", g.getStatus() == Goal.GoalStatus.COMPLETED);
             map.put("category", g.getCategory() != null ? g.getCategory() : "");
             map.put("priority", g.getPriority() != null ? g.getPriority().name().toLowerCase() : "medium");
+            map.put("dueDate", g.getDueDate());
+            map.put("startTime", g.getStartTime());
+            map.put("endTime", g.getEndTime());
+            map.put("durationMinutes", g.getDurationMinutes());
+            map.put("targetValue", g.getTargetValue());
+            map.put("targetUnit", g.getTargetUnit());
+            map.put("createdAt", g.getCreatedAt());
+            map.put("coachFeedback", g.getCoachFeedback());
             return map;
         }).toList());
         response.put("aiFeedback", recentCheckins.isEmpty() ? "Welcome! Start by completing your first goal to get AI feedback." : recentCheckins.get(0).getAiFeedback() != null ? recentCheckins.get(0).getAiFeedback() : "Good job! Keep it up.");
-        response.put("streak", 5);
+        response.put("recentCheckins", recentCheckins.stream().map(c -> {
+            Map<String, Object> map = new java.util.HashMap<>();
+            map.put("id", String.valueOf(c.getId()));
+            map.put("note", c.getNote());
+            map.put("checkinTime", c.getCheckinTime());
+            map.put("aiFeedback", c.getAiFeedback());
+            
+            // Add coach feedback
+            var feedback = coachFeedbackRepository.findAllByCheckinId(c.getId());
+            map.put("coachFeedback", feedback.stream().map(com.alaya.model.CoachFeedback::getFeedbackText).toList());
+            
+            return map;
+        }).toList());
         response.put("weekly", weekly);
         response.put("coachId", coachIdResponse);
         response.put("coachName", coachName);
@@ -128,6 +143,50 @@ public class DashboardService {
         response.put("unreadCount", unreadCount);
 
         return response;
+    }
+
+    private List<Map<String, Object>> calculateWeeklyProgress(Long clientId) {
+        var allCheckins = checkinRepository.findAllByClientIdOrderByCheckinTimeDesc(clientId);
+        var allGoals = goalRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
+        List<Map<String, Object>> weekly = new java.util.ArrayList<>();
+        
+        for (int i = 6; i >= 0; i--) {
+            java.time.LocalDate date = java.time.LocalDate.now().minusDays(i);
+            
+            // Count checkins for this day
+            var dayCheckins = allCheckins.stream()
+                    .filter(ch -> ch.getCheckinTime().toLocalDate().equals(date))
+                    .toList();
+            
+            long checkinCount = dayCheckins.size();
+            long checkinCompletions = dayCheckins.stream().filter(Checkin::isCompleted).count();
+            
+            // Retroactive: Count goals completed on this day (if they don't have a checkin)
+            long historicalCompletions = allGoals.stream()
+                    .filter(g -> g.getStatus() == Goal.GoalStatus.COMPLETED 
+                            && g.getCompletedAt() != null 
+                            && g.getCompletedAt().toLocalDate().equals(date))
+                    .count();
+            
+            // Avoid double counting if a goal completion already has a checkin
+            long totalCompletions = Math.max(checkinCompletions, historicalCompletions);
+            
+            // More nuanced score: base activity + weight for completions
+            // Each checkin = 25 pts, each completion = 50 pts, max 100
+            long score = Math.min(100, (checkinCount * 25) + (totalCompletions * 50));
+            
+            // Ensure at least a tiny bit shows if there's ANY activity
+            if ((checkinCount > 0 || totalCompletions > 0) && score < 15) score = 15;
+
+            String dayName = date.getDayOfWeek().name().substring(0, 3);
+            dayName = dayName.charAt(0) + dayName.substring(1).toLowerCase();
+            
+            weekly.add(Map.of(
+                "day", dayName,
+                "score", score
+            ));
+        }
+        return weekly;
     }
 
     public List<Map<String, Object>> getCoachClients(Long coachId) {
@@ -142,32 +201,42 @@ public class DashboardService {
         System.out.println("DEBUG: Found " + clients.size() + " clients for coach " + coachId);
 
         return clients.stream().map(c -> {
-            List<Goal> goals = goalRepository.findAllByClientId(c.getId());
+            List<Goal> goals = goalRepository.findAllByClientIdOrderByCreatedAtDesc(c.getId());
             long completed = goals.stream().filter(g -> g.getStatus() == Goal.GoalStatus.COMPLETED).count();
+            long activeGoals = goals.size() - completed;
             int completionRate = goals.isEmpty() ? 0 : (int) ((completed * 100) / goals.size());
             
+            var recentCheckins = checkinRepository.findAllByClientIdOrderByCheckinTimeDesc(c.getId());
+
             Map<String, Object> clientMap = new java.util.HashMap<>();
             clientMap.put("id", String.valueOf(c.getId()));
             clientMap.put("name", c.getFullName() != null ? c.getFullName() : "Unknown");
-            clientMap.put("streak", 7); // Mock
             clientMap.put("completion", completionRate);
-            clientMap.put("lastActive", "2h ago"); // Mock
+            clientMap.put("activeGoals", activeGoals);
+            clientMap.put("lastActive", recentCheckins.isEmpty() ? "Never" : "Recent"); // Simple for now
             
+            clientMap.put("recentCheckins", recentCheckins.stream().limit(5).map(ch -> {
+                Map<String, Object> map = new java.util.HashMap<>();
+                map.put("id", String.valueOf(ch.getId()));
+                map.put("note", ch.getNote());
+                map.put("checkinTime", ch.getCheckinTime());
+                map.put("aiFeedback", ch.getAiFeedback());
+
+                // Add coach feedback
+                var feedback = coachFeedbackRepository.findAllByCheckinId(ch.getId());
+                map.put("coachFeedback", feedback.stream().map(com.alaya.model.CoachFeedback::getFeedbackText).toList());
+
+                return map;
+            }).toList());
+
             ChatMessage lastMsg = chatMessageRepository.findLastMessage(coachId, c.getId());
             clientMap.put("lastMessage", lastMsg != null ? lastMsg.getContent() : "No messages yet");
             
             long unreadCount = chatMessageRepository.countBySenderIdAndReceiverIdAndReadFalse(c.getId(), coachId);
             clientMap.put("unreadCount", unreadCount);
 
-            clientMap.put("weekly", List.of(
-                Map.of("day", "Mon", "score", 80),
-                Map.of("day", "Tue", "score", 75),
-                Map.of("day", "Wed", "score", 90),
-                Map.of("day", "Thu", "score", 85),
-                Map.of("day", "Fri", "score", 95),
-                Map.of("day", "Sat", "score", 70),
-                Map.of("day", "Sun", "score", 88)
-            ));
+            // Real weekly progress based on checkins
+            clientMap.put("weekly", calculateWeeklyProgress(c.getId()));
             
             return clientMap;
         }).toList();

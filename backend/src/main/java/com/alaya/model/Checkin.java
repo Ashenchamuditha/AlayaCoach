@@ -26,6 +26,9 @@ public class Checkin {
     private String note;
 
     @Column(nullable = false)
+    private boolean completed;
+
+    @Column(nullable = false)
     @Builder.Default
     private LocalDateTime checkinTime = LocalDateTime.now();
 

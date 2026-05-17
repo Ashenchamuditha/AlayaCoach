@@ -27,6 +27,7 @@ import { api } from "@/lib/api";
 export interface NewGoalInput {
   title: string;
   description?: string;
+  clientId?: string;
   category: string;
   priority: "low" | "medium" | "high";
   dueDate: string;
@@ -41,6 +42,7 @@ export interface NewGoalInput {
 const schema = z.object({
   title: z.string().trim().min(3, "Title must be at least 3 characters").max(100),
   description: z.string().trim().max(500).optional(),
+  clientId: z.string().optional(),
   category: z.string().trim().min(1, "Category is required"),
   priority: z.enum(["low", "medium", "high"]),
   dueDate: z.string().min(1, "Due date is required"),
@@ -54,14 +56,16 @@ const schema = z.object({
 
 interface Props {
   onAdd: (g: NewGoalInput & { id: string }) => void;
+  clientId?: string;
 }
 
-export function AddGoalDialog({ onAdd }: Props) {
+export function AddGoalDialog({ onAdd, clientId }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState<NewGoalInput>({
     title: "",
     description: "",
+    clientId: clientId,
     category: "Wellness",
     priority: "medium",
     dueDate: new Date().toISOString().slice(0, 10),
@@ -98,6 +102,7 @@ export function AddGoalDialog({ onAdd }: Props) {
     setForm({
       title: "",
       description: "",
+      clientId: clientId,
       category: "Wellness",
       priority: "medium",
       dueDate: new Date().toISOString().slice(0, 10),
@@ -124,7 +129,13 @@ export function AddGoalDialog({ onAdd }: Props) {
     setSubmitting(true);
     try {
       const { data } = await api.post("/goals", parsed.data);
-      onAdd({ ...parsed.data, id: String(data.id) });
+      onAdd({
+        ...parsed.data,
+        id: String(data.id),
+        dueDate: data.dueDate,
+        targetValue: data.targetValue,
+        targetUnit: data.targetUnit,
+      });
       toast.success("Goal added");
       reset();
       setOpen(false);
@@ -172,9 +183,7 @@ export function AddGoalDialog({ onAdd }: Props) {
               placeholder="Why this matters and how you'll do it"
               rows={3}
             />
-            {errors.description && (
-              <p className="text-xs text-destructive">{errors.description}</p>
-            )}
+            {errors.description && <p className="text-xs text-destructive">{errors.description}</p>}
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
@@ -199,9 +208,7 @@ export function AddGoalDialog({ onAdd }: Props) {
               <Label>Priority *</Label>
               <Select
                 value={form.priority}
-                onValueChange={(v) =>
-                  setForm({ ...form, priority: v as NewGoalInput["priority"] })
-                }
+                onValueChange={(v) => setForm({ ...form, priority: v as NewGoalInput["priority"] })}
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -243,7 +250,9 @@ export function AddGoalDialog({ onAdd }: Props) {
                 id="dueDate"
                 type="date"
                 value={form.dueDate}
-                onChange={(e) => setForm({ ...form, dueDate: e.target.value, endDate: e.target.value })}
+                onChange={(e) =>
+                  setForm({ ...form, dueDate: e.target.value, endDate: e.target.value })
+                }
               />
               {errors.dueDate && <p className="text-xs text-destructive">{errors.dueDate}</p>}
             </div>

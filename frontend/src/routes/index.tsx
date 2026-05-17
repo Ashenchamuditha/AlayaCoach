@@ -1,19 +1,28 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import CountUpNS from "react-countup";
 const CountUp = (CountUpNS as unknown as { default?: typeof CountUpNS }).default ?? CountUpNS;
-import { ArrowRight, CheckCircle2, MessageCircle, Sparkles, Target, Users, Zap } from "lucide-react";
+import {
+  ArrowRight,
+  CheckCircle2,
+  MessageCircle,
+  Sparkles,
+  Target,
+  Users,
+  Zap,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { api } from "@/lib/api";
+import { useAuth } from "@/store/auth";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Alaya Master Coach - Your Personal Accountability Partner" },
+      { title: "Alaya Master Coach ✨ - Your Personal Accountability Partner" },
       {
         name: "description",
         content:
@@ -37,7 +46,7 @@ const features = [
   {
     icon: Target,
     title: "Track Habits",
-    desc: "Build daily rituals with smart streaks, reminders, and a check-in system designed by behavioral scientists.",
+    desc: "Build daily rituals with smart reminders and a check-in system designed by behavioral scientists.",
   },
   {
     icon: Zap,
@@ -52,12 +61,24 @@ const features = [
 ];
 
 function LandingPage() {
+  const { user, hydrate } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<PublicStats>({
     activeUsers: 12480,
     coaches: 312,
     goalsCompleted: 184230,
     messagesExchanged: 982451,
   });
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  useEffect(() => {
+    if (user) {
+      navigate({ to: user.role === "COACH" ? "/coach" : "/app" });
+    }
+  }, [user, navigate]);
 
   useEffect(() => {
     api
@@ -90,7 +111,10 @@ function LandingPage() {
                 Trusted by 12,000+ ambitious humans
               </div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
-                <span className="text-gradient-brand">Alaya Master Coach</span>
+                <span className="text-gradient-brand flex items-center justify-center gap-3">
+                  <Sparkles className="h-8 w-8 sm:h-12 sm:w-12 text-primary animate-pulse" />
+                  Alaya Master Coach
+                </span>
                 <br />
                 <span className="text-foreground">Your Personal Accountability Partner</span>
               </h1>

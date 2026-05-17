@@ -14,6 +14,7 @@ public class CheckinService {
     private final CheckinRepository checkinRepository;
     private final com.alaya.repository.GoalRepository goalRepository;
     private final AIService aiService;
+    private final NotificationService notificationService;
 
     /**
      * Saves a check-in and immediately calls Groq AI to generate feedback.
@@ -37,9 +38,21 @@ public class CheckinService {
                 .clientId(clientId)
                 .goalId(goalId)
                 .note(note)
+                .completed(completed)
                 .aiFeedback(feedback)
                 .build();
-        return checkinRepository.save(checkin);
+        Checkin saved = checkinRepository.save(checkin);
+
+        // Notify client about new AI feedback
+        notificationService.createNotification(
+                clientId,
+                "New AI Coaching Suggestion",
+                "Your AI Coach has analyzed your recent check-in and provided some advice.",
+                com.alaya.model.Notification.NotificationType.AI_SUGGESTION,
+                String.valueOf(saved.getId())
+        );
+
+        return saved;
     }
 
     public List<Checkin> getClientCheckins(Long clientId) {

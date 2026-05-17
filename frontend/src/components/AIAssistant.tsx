@@ -15,14 +15,16 @@ interface AIMessage {
 }
 
 const suggestions = [
-  "Help me plan tomorrow",
-  "I'm feeling unmotivated",
-  "Suggest a 20-minute workout",
-  "How do I stay consistent?",
+  "Plan a workout for me",
+  "Healthy meal ideas",
+  "How to track my macros?",
+  "I'm feeling unmotivated today",
 ];
 
 const fallbackReply = (text: string) => {
   const t = text.toLowerCase();
+  if (t.includes("diet") || t.includes("meal") || t.includes("eat"))
+    return "Focus on whole foods: high protein, complex carbs, and healthy fats. Avoid processed sugars and stay hydrated. Want a specific meal plan for your fitness level?";
   if (t.includes("motivat") || t.includes("unmotivat"))
     return "Motivation follows action. Pick the smallest possible version of your next goal — 2 minutes is enough — and start a timer. Momentum will do the rest.";
   if (t.includes("plan"))
@@ -31,22 +33,32 @@ const fallbackReply = (text: string) => {
     return "Try this 20-min set: 5 min mobility, 3 rounds of (10 push-ups, 15 squats, 30s plank), 5 min cooldown. Hydrate well.";
   if (t.includes("consist"))
     return "Consistency = anchor + small + visible. Anchor the habit to an existing routine, keep it tiny, and track it where you'll see it daily.";
-  return "Great question. Break it into a single next action you can do in under 5 minutes — then tell me how it went.";
+  return "I'm here to help with your fitness, diet, and mindset. Break your next step into a 5-minute action and let me know how it goes!";
 };
 
 export function AIAssistant() {
-  const [messages, setMessages] = useState<AIMessage[]>([
-    {
-      id: "welcome",
-      role: "assistant",
-      content:
-        "Hi! I'm your AI Assistant. Ask me about your goals, habits, focus, mindset, or anything you're working on.",
-      timestamp: new Date().toISOString(),
-    },
-  ]);
+  const [messages, setMessages] = useState<AIMessage[]>([]);
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    api.get<AIMessage[]>("/ai/history").then((r) => {
+      if (r.data && r.data.length > 0) {
+        setMessages(r.data);
+      } else {
+        setMessages([
+          {
+            id: "welcome",
+            role: "assistant",
+            content:
+              "Hi! I'm your AI Assistant. Ask me about fitness routines, diet plans, workout tracking, or mindset coaching.",
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
@@ -92,9 +104,9 @@ export function AIAssistant() {
   };
 
   return (
-    <Card className="flex h-[600px] flex-col overflow-hidden p-0">
-      <div className="flex items-center gap-3 border-b border-border bg-gradient-soft px-4 py-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white">
+    <Card className="flex h-full min-h-[500px] flex-col overflow-hidden p-0 border-none shadow-none md:border-solid md:shadow-sm md:h-[600px] md:rounded-xl">
+      <div className="flex items-center gap-3 border-b border-border bg-gradient-soft px-4 py-3 shrink-0">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-glow">
           <Sparkles className="h-5 w-5" />
         </div>
         <div>
@@ -103,7 +115,7 @@ export function AIAssistant() {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto bg-muted/30 p-4">
+      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4 md:p-6">
         <AnimatePresence initial={false}>
           {messages.map((m) => {
             const mine = m.role === "user";

@@ -26,6 +26,7 @@ public class ChatService {
     private final ChatMessageRepository chatMessageRepository;
     private final UserRepository userRepository;
     private final SimpMessagingTemplate messagingTemplate;
+    private final NotificationService notificationService;
 
     /**
      * Validate that sender and receiver can exchange messages.
@@ -77,6 +78,15 @@ public class ChatService {
                     receiver.getEmail(),
                     "/queue/messages",
                     dto
+            );
+
+            // Create notification for receiver
+            notificationService.createNotification(
+                    receiverId,
+                    "New Message from " + sender.getFullName(),
+                    content.length() > 50 ? content.substring(0, 47) + "..." : content,
+                    com.alaya.model.Notification.NotificationType.MESSAGE,
+                    String.valueOf(senderId)
             );
         }
 

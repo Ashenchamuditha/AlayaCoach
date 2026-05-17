@@ -17,11 +17,11 @@ public class MasterCoachApplication {
     public CommandLineRunner testDatabaseConnection(DataSource dataSource) {
         return args -> {
             try (Connection conn = dataSource.getConnection()) {
-                System.out.println("✅ DATABASE CONNECTION SUCCESSFUL!");
+                System.out.println("[OK] DATABASE CONNECTION SUCCESSFUL!");
                 System.out.println("Connected to: " + conn.getMetaData().getURL());
                 System.out.println("Database User: " + conn.getMetaData().getUserName());
             } catch (Exception e) {
-                System.err.println("❌ DATABASE CONNECTION FAILED!");
+                System.err.println("[ERROR] DATABASE CONNECTION FAILED!");
                 System.err.println("Error: " + e.getMessage());
             }
         };
