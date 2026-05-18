@@ -46,7 +46,8 @@ function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
-      console.log("Attempting registration with:", { name, email, role, apiBase: api.defaults.baseURL });
+      const fullUrl = `${api.defaults.baseURL}/auth/register`;
+      console.log("Attempting registration with:", { name, email, role, fullUrl });
       const { data } = await api.post<{
         token: string;
         user: { id: string; name: string; email: string; role: Role };
@@ -61,7 +62,7 @@ function RegisterPage() {
         console.error("Axios error response:", err.response?.data);
         errorMsg = err.response?.data?.message || err.message || "Registration failed. Please try again.";
         // Alert the user with technical details for debugging
-        alert(`DEBUG: Registration Failed\nAPI Base: ${api.defaults.baseURL}\nError: ${errorMsg}\nStatus: ${err.response?.status}`);
+        alert(`DEBUG: Registration Failed\nFull URL: ${api.defaults.baseURL}/auth/register\nError: ${errorMsg}\nStatus: ${err.response?.status}`);
       } else {
         alert(`DEBUG: Unexpected Error\n${String(err)}`);
       }

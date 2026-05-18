@@ -6,6 +6,11 @@ export const API_BASE =
     ? `${window.location.protocol}//${window.location.hostname}:8081/api`
     : "http://localhost:8081/api");
 
+console.log("API_BASE initialized as:", API_BASE);
+if (!import.meta.env.VITE_API_URL) {
+  console.warn("VITE_API_URL is NOT defined in environment variables! Falling back to localhost logic.");
+}
+
 export const api = axios.create({
   baseURL: API_BASE,
 });
