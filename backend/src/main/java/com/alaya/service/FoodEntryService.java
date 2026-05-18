@@ -98,6 +98,7 @@ public class FoodEntryService {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new RuntimeException("Food entry not found"));
         entry.setCoachFeedback(feedback);
+        entry.setUpdatedAt(LocalDateTime.now());
         FoodEntry saved = foodEntryRepository.save(entry);
 
         // Send real-time notification to client

@@ -47,7 +47,8 @@ public class GoalService {
 
     public Goal createGoal(String title, String description, Long clientId, Long coachId, 
                            String category, String priority, String dueDate, Integer durationMinutes,
-                           String startTime, String endTime, Double targetValue, String targetUnit) {
+                           String startTime, String endTime, Double targetValue, String targetUnit,
+                           Long creatorId) {
         
         LocalDateTime parsedDueDate = null;
         if (dueDate != null && !dueDate.isBlank()) {
@@ -81,6 +82,17 @@ public class GoalService {
                 .targetUnit(targetUnit != null ? targetUnit : "")
                 .build());
         
+        // Notify client if the goal was created by their coach
+        if (creatorId != null && !creatorId.equals(clientId)) {
+            notificationService.createNotification(
+                    clientId,
+                    "New Goal Assigned",
+                    "Your coach has assigned a new goal to you: " + title,
+                    com.alaya.model.Notification.NotificationType.GOAL_UPDATE,
+                    String.valueOf(goal.getId())
+            );
+        }
+
         notifyUpdate(goal);
         return goal;
     }
@@ -114,6 +126,7 @@ public class GoalService {
         if (targetValue != null) goal.setTargetValue(targetValue);
         if (targetUnit != null) goal.setTargetUnit(targetUnit);
 
+        goal.setUpdatedAt(LocalDateTime.now());
         Goal saved = goalRepository.save(goal);
         notifyUpdate(saved);
         return saved;
@@ -179,6 +192,7 @@ public class GoalService {
             goal.setStatus(Goal.GoalStatus.ACTIVE);
             goal.setCompletedAt(null);
         }
+        goal.setUpdatedAt(LocalDateTime.now());
         Goal saved = goalRepository.save(goal);
         notifyUpdate(saved);
         return saved;
@@ -192,6 +206,7 @@ public class GoalService {
         }
         goal.setStatus(Goal.GoalStatus.COMPLETED);
         goal.setCompletedAt(LocalDateTime.now());
+        goal.setUpdatedAt(LocalDateTime.now());
         // Log checkin
         checkinService.logCheckin(goal.getClientId(), goal.getId(), "Coach completed goal: " + goal.getTitle(), true);
         
@@ -218,6 +233,7 @@ public class GoalService {
         }
 
         goal.setCoachFeedback(feedback);
+        goal.setUpdatedAt(LocalDateTime.now());
         Goal saved = goalRepository.save(goal);
         
         // Notify client about new goal feedback
@@ -242,6 +258,7 @@ public class GoalService {
         }
 
         goal.setCoachFeedback(null);
+        goal.setUpdatedAt(LocalDateTime.now());
         Goal saved = goalRepository.save(goal);
         notifyUpdate(saved);
         return saved;

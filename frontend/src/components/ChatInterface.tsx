@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api";
 import { createChatClient, type ChatMessage } from "@/lib/ws";
 import { useAuth } from "@/store/auth";
+import { useTheme } from "@/store/theme";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -17,6 +18,7 @@ interface Props {
 
 export function ChatInterface({ peerId, peerName }: Props) {
   const { user, token } = useAuth();
+  const { theme } = useTheme();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [text, setText] = useState("");
   const clientRef = useRef<Client | null>(null);
@@ -95,58 +97,63 @@ export function ChatInterface({ peerId, peerName }: Props) {
 
       <div
         ref={scrollRef}
-        className="flex-1 space-y-4 overflow-y-auto p-4 md:p-6 bg-[#f8f9fa] dark:bg-[#0c0c0d]"
-        style={{
-          backgroundImage:
-            theme === "dark"
-              ? "radial-gradient(circle at 2px 2px, rgba(255,255,255,0.02) 1px, transparent 0)"
-              : "radial-gradient(circle at 2px 2px, rgba(0,0,0,0.02) 1px, transparent 0)",
-          backgroundSize: "24px 24px",
-        }}
+        className="relative flex-1 space-y-4 overflow-y-auto p-4 md:p-6 bg-[#fdfdfd] dark:bg-[#0c0c0d]"
       >
-        <AnimatePresence initial={false}>
-          {messages.map((m, i) => {
-            const mine = m.senderId === user?.id;
-            return (
-              <motion.div
-                key={m.id ?? `${m.timestamp}-${i}`}
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={cn("flex", mine ? "justify-end" : "justify-start")}
-              >
-                <div
-                  className={cn(
-                    "max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all",
-                    mine
-                      ? "rounded-br-sm bg-gradient-brand text-white shadow-md shadow-primary/10"
-                      : "rounded-bl-sm bg-card text-foreground border border-border/50",
-                  )}
+        {/* Background Image Overlay */}
+        <div 
+          className="absolute inset-0 z-0 pointer-events-none opacity-[0.05] dark:opacity-[0.03]"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        
+        <div className="relative z-10 space-y-4">
+          <AnimatePresence initial={false}>
+            {messages.map((m, i) => {
+              const mine = String(m.senderId) === String(user?.id);
+              return (
+                <motion.div
+                  key={m.id ?? `${m.timestamp}-${i}`}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className={cn("flex", mine ? "justify-end" : "justify-start")}
                 >
-                  <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
                   <div
                     className={cn(
-                      "mt-1.5 flex items-center justify-end gap-1.5 text-[9px] font-medium tracking-tight",
-                      mine ? "text-white/70" : "text-muted-foreground/70",
+                      "max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all",
+                      mine
+                        ? "rounded-br-sm bg-gradient-brand text-white shadow-md shadow-primary/10"
+                        : "rounded-bl-sm bg-card text-foreground border border-border/50",
                     )}
                   >
-                    <span>
-                      {new Date(m.timestamp).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    {mine && (
-                      <span className="flex">
-                        <span className="text-primary-foreground/90">✓</span>
-                        {m.read && <span className="-ml-0.5 text-primary-foreground/90">✓</span>}
+                    <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
+                    <div
+                      className={cn(
+                        "mt-1.5 flex items-center justify-end gap-1.5 text-[9px] font-medium tracking-tight",
+                        mine ? "text-white/70" : "text-muted-foreground/70",
+                      )}
+                    >
+                      <span>
+                        {new Date(m.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
                       </span>
-                    )}
+                      {mine && (
+                        <span className="flex">
+                          <span className="text-primary-foreground/90">✓</span>
+                          {m.read && <span className="-ml-0.5 text-primary-foreground/90">✓</span>}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </AnimatePresence>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
+        </div>
       </div>
 
       <form

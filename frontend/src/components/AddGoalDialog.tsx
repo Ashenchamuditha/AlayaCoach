@@ -68,78 +68,68 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     clientId: clientId,
     category: "Wellness",
     priority: "medium",
-    dueDate: new Date().toISOString().slice(0, 10),
-    endDate: new Date().toISOString().slice(0, 10),
+    dueDate: "", // Empty to force manual selection or at least force validation
+    endDate: "",
     startTime: "09:00",
     endTime: "10:00",
     durationMinutes: 60,
     targetValue: 0,
     targetUnit: "",
   });
-  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const calculateDuration = (start: string, end: string) => {
-    try {
-      const [sh, sm] = start.split(":").map(Number);
-      const [eh, em] = end.split(":").map(Number);
-      const startTotal = sh * 60 + sm;
-      const endTotal = eh * 60 + em;
-      let diff = endTotal - startTotal;
-      if (diff < 0) diff += 1440; // overnight
-      return diff;
-    } catch {
-      return 0;
-    }
-  };
-
-  const updateTime = (key: "startTime" | "endTime", val: string) => {
-    const nextForm = { ...form, [key]: val };
-    const dur = calculateDuration(nextForm.startTime, nextForm.endTime);
-    setForm({ ...nextForm, durationMinutes: dur });
-  };
-
-  const reset = () =>
+  // ... (keep reset logic but updated)
+  const reset = () => {
     setForm({
       title: "",
       description: "",
       clientId: clientId,
       category: "Wellness",
       priority: "medium",
-      dueDate: new Date().toISOString().slice(0, 10),
-      endDate: new Date().toISOString().slice(0, 10),
+      dueDate: "",
+      endDate: "",
       startTime: "09:00",
       endTime: "10:00",
       durationMinutes: 60,
       targetValue: 0,
       targetUnit: "",
     });
+    setErrors({});
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const parsed = schema.safeParse(form);
-    if (!parsed.success) {
-      const fieldErrors: Record<string, string> = {};
-      parsed.error.issues.forEach((i) => {
-        fieldErrors[i.path[0] as string] = i.message;
-      });
+    
+    // Explicit check for required fields including Due Date
+    const fieldErrors: Record<string, string> = {};
+    if (!form.title || form.title.trim().length < 3) fieldErrors.title = "Title must be at least 3 chars";
+    if (!form.category) fieldErrors.category = "Category is required";
+    if (!form.dueDate) fieldErrors.dueDate = "Due date is required";
+    if (!form.startTime) fieldErrors.startTime = "Start time is required";
+    if (!form.endTime) fieldErrors.endTime = "End time is required";
+
+    if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
       return;
     }
+
     setErrors({});
     setSubmitting(true);
     try {
-      const { data } = await api.post("/goals", parsed.data);
+      const payload = { ...form, endDate: form.dueDate };
+      const { data } = await api.post("/goals", payload);
+      
+      toast.success("Successfully goal is added");
+      
+      // Call parent update then close and reset
       onAdd({
-        ...parsed.data,
+        ...payload,
         id: String(data.id),
-        dueDate: data.dueDate,
-        targetValue: data.targetValue,
-        targetUnit: data.targetUnit,
       });
-      toast.success("Goal added");
-      reset();
+      
       setOpen(false);
-    } catch {
+      reset();
+    } catch (err) {
+      console.error(err);
       toast.error("Failed to add goal");
     } finally {
       setSubmitting(false);

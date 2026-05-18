@@ -52,6 +52,9 @@ public class Goal {
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     private LocalDateTime completedAt;
 
     @Column(columnDefinition = "TEXT")

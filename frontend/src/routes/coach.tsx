@@ -566,12 +566,15 @@ function CoachDashboard() {
             <Button
               variant="ghost"
               onClick={() => {
-                setSelected(null);
-                setChatting(false);
+                if (chatting) {
+                  setChatting(false);
+                } else {
+                  setSelected(null);
+                }
               }}
               className="mb-4"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" /> Back to clients
+              <ArrowLeft className="mr-2 h-4 w-4" /> {chatting ? "Back to client details" : "Back to clients"}
             </Button>
 
             {!chatting ? (

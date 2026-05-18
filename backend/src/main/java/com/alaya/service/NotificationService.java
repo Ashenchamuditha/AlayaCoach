@@ -51,7 +51,7 @@ public class NotificationService {
     }
 
     public List<Notification> getUnreadNotifications(Long userId) {
-        return notificationRepository.findAllByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
+        return notificationRepository.findAllByUserIdAndReadFalseOrderByCreatedAtDesc(userId);
     }
 
     public void markAsRead(Long notificationId, Long userId) {
@@ -64,12 +64,12 @@ public class NotificationService {
     }
 
     public void markAllAsRead(Long userId) {
-        List<Notification> unread = notificationRepository.findAllByUserIdAndIsReadFalseOrderByCreatedAtDesc(userId);
+        List<Notification> unread = notificationRepository.findAllByUserIdAndReadFalseOrderByCreatedAtDesc(userId);
         unread.forEach(n -> n.setRead(true));
         notificationRepository.saveAll(unread);
     }
 
     public long getUnreadCount(Long userId) {
-        return notificationRepository.countByUserIdAndIsReadFalse(userId);
+        return notificationRepository.countByUserIdAndReadFalse(userId);
     }
 }

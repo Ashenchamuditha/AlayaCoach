@@ -68,7 +68,8 @@ public class GoalController {
             req.getStartTime(),
             req.getEndTime(),
             req.getTargetValue(),
-            req.getTargetUnit()
+            req.getTargetUnit(),
+            user.getId()
         );
 
         // Auto-log a checkin for the new goal to get initial AI feedback

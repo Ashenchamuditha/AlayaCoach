@@ -31,6 +31,9 @@ public class FoodEntry {
     @Builder.Default
     private LocalDateTime entryTime = LocalDateTime.now();
 
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+
     @Column(columnDefinition = "TEXT")
     private String aiFeedback;
 

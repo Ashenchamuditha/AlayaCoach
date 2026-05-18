@@ -119,6 +119,7 @@ public class DashboardService {
             map.put("targetValue", g.getTargetValue());
             map.put("targetUnit", g.getTargetUnit());
             map.put("createdAt", g.getCreatedAt());
+            map.put("updatedAt", g.getUpdatedAt());
             map.put("coachFeedback", g.getCoachFeedback());
             return map;
         }).toList());

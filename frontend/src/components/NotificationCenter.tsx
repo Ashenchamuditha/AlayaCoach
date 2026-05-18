@@ -93,23 +93,41 @@ export function NotificationCenter() {
   const handleNotificationClick = (n: Notification) => {
     if (!n.isRead) markAsRead(n.id);
 
-    // Navigation logic based on type
-    switch (n.type) {
-      case "MESSAGE":
-        navigate({ to: n.relatedId ? "/app" : "/chat", search: { tab: "chat" } as any });
-        break;
-      case "FOOD_FEEDBACK":
-        navigate({ to: "/app", search: { tab: "nutrition" } as any });
-        break;
-      case "GOAL_UPDATE":
-      case "GOAL_COMPLETE":
-        navigate({ to: "/app", search: { tab: "overview" } as any });
-        break;
-      case "AI_SUGGESTION":
-        navigate({ to: "/app", search: { tab: "ai" } as any });
-        break;
-      default:
-        break;
+    const isCoach = useAuth.getState().user?.role === "COACH";
+
+    // Navigation logic based on type and role
+    if (isCoach) {
+      switch (n.type) {
+        case "MESSAGE":
+        case "NEW_CLIENT":
+        case "GOAL_COMPLETE":
+          // For coach, we don't have a direct way to set the 'selected' client via URL yet
+          // but we can at least take them to the coach dashboard
+          navigate({ to: "/coach" });
+          break;
+        default:
+          navigate({ to: "/coach" });
+          break;
+      }
+    } else {
+      switch (n.type) {
+        case "MESSAGE":
+          navigate({ to: "/app", search: { tab: "chat" } as any });
+          break;
+        case "FOOD_FEEDBACK":
+          navigate({ to: "/app", search: { tab: "nutrition" } as any });
+          break;
+        case "GOAL_UPDATE":
+        case "GOAL_COMPLETE":
+          navigate({ to: "/app", search: { tab: "overview" } as any });
+          break;
+        case "AI_SUGGESTION":
+          navigate({ to: "/app", search: { tab: "ai" } as any });
+          break;
+        default:
+          navigate({ to: "/app" });
+          break;
+      }
     }
   };
 

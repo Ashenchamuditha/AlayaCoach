@@ -7,8 +7,8 @@ import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "notifications", indexes = {
-    @Index(name = "idx_notification_user_id", columnList = "userId"),
-    @Index(name = "idx_notification_is_read", columnList = "isRead")
+    @Index(name = "idx_notification_user_id", columnList = "user_id"),
+    @Index(name = "idx_notification_is_read", columnList = "is_read")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class Notification {
@@ -17,7 +17,7 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId; // The recipient
 
     @Column(nullable = false)
@@ -30,13 +30,14 @@ public class Notification {
     @Column(nullable = false)
     private NotificationType type;
 
+    @Column(name = "related_id")
     private String relatedId; // e.g. goalId, entryId, peerId
 
-    @Column(nullable = false)
+    @Column(name = "is_read", nullable = false)
     @Builder.Default
-    private boolean isRead = false;
+    private boolean read = false;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default
     private LocalDateTime createdAt = LocalDateTime.now();
 
