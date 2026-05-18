@@ -46,18 +46,26 @@ function RegisterPage() {
     setError(null);
     setLoading(true);
     try {
+      console.log("Attempting registration with:", { name, email, role, apiBase: api.defaults.baseURL });
       const { data } = await api.post<{
         token: string;
         user: { id: string; name: string; email: string; role: Role };
       }>("/auth/register", { name, email, password, role });
+      console.log("Registration successful:", data);
       setAuth(data.user, data.token);
       navigate({ to: data.user.role === "COACH" ? "/coach" : "/app" });
     } catch (err: unknown) {
+      console.error("Registration error details:", err);
+      let errorMsg = "An unexpected error occurred";
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Registration failed. Please try again.");
+        console.error("Axios error response:", err.response?.data);
+        errorMsg = err.response?.data?.message || err.message || "Registration failed. Please try again.";
+        // Alert the user with technical details for debugging
+        alert(`DEBUG: Registration Failed\nAPI Base: ${api.defaults.baseURL}\nError: ${errorMsg}\nStatus: ${err.response?.status}`);
       } else {
-        setError("An unexpected error occurred");
+        alert(`DEBUG: Unexpected Error\n${String(err)}`);
       }
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
