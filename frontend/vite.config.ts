@@ -18,8 +18,13 @@ export default defineConfig({
     define: {
       global: "window",
     },
+    build: {
+      outDir: "dist",
+    }
   },
+  // Disable TanStack Start SSR features for Vercel SPA deployment
   tanstackStart: {
     server: { entry: "server" },
+    ssr: false,
   },
 });
