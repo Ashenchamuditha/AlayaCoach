@@ -1,9 +1,10 @@
 import axios from "axios";
 
 export const API_BASE =
-  typeof window !== "undefined"
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== "undefined"
     ? `${window.location.protocol}//${window.location.hostname}:8081/api`
-    : "http://localhost:8081/api";
+    : "http://localhost:8081/api");
 
 export const api = axios.create({
   baseURL: API_BASE,
