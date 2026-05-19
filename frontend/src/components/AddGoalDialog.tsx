@@ -62,6 +62,7 @@ interface Props {
 export function AddGoalDialog({ onAdd, clientId }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<NewGoalInput>({
     title: "",
     description: "",
@@ -77,7 +78,23 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     targetUnit: "",
   });
 
-  // ... (keep reset logic but updated)
+  const updateTime = (field: "startTime" | "endTime", value: string) => {
+    const newForm = { ...form, [field]: value };
+    
+    // Recalculate duration
+    if (newForm.startTime && newForm.endTime) {
+      const [sh, sm] = newForm.startTime.split(":").map(Number);
+      const [eh, em] = newForm.endTime.split(":").map(Number);
+      const start = sh * 60 + sm;
+      let end = eh * 60 + em;
+      
+      if (end < start) end += 24 * 60; // handle overnight
+      newForm.durationMinutes = end - start;
+    }
+    
+    setForm(newForm);
+  };
+
   const reset = () => {
     setForm({
       title: "",
