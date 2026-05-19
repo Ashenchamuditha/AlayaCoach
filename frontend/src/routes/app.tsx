@@ -596,28 +596,25 @@ function ClientDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0 mt-1 sm:mt-0">
-                            <div className="flex items-center gap-1">
-                              {g.done ? (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 text-amber-600 border-amber-200"
-                                  onClick={() => toggle(g.id)}
-                                >
-                                  Re-activate
-                                </Button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 bg-green-600 hover:bg-green-700 text-white"
-                                  onClick={() => toggle(g.id)}
-                                >
-                                  Complete
-                                </Button>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 shrink-0">
+                            {g.done ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 text-amber-600 border-amber-200"
+                                onClick={() => toggle(g.id)}
+                              >
+                                Re-activate
+                              </Button>
+                            ) : (
+                              <Button
+                                size="sm"
+                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 bg-green-600 hover:bg-green-700 text-white"
+                                onClick={() => toggle(g.id)}
+                              >
+                                Complete
+                              </Button>
+                            )}
                               <Button
                                 size="icon"
                                 variant="ghost"

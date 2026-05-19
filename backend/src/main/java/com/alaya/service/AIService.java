@@ -73,6 +73,16 @@ public class AIService {
         return res != null ? res : "{\"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"That's a good choice! Keep monitoring your portions.\", \"chatStarter\": \"How can I improve this meal?\"}";
     }
 
+    public String generateDailyTips(String context) {
+        String prompt = "Based on the following user data (food logs, check-ins, and recent AI chats), generate 5 highly personalized, concise, and actionable daily health/fitness tips. " +
+                "Each tip should be max 15 words. " +
+                "Respond ONLY with a JSON array of strings: [\"tip 1\", \"tip 2\", \"tip 3\", \"tip 4\", \"tip 5\"]. " +
+                "Context: " + context;
+
+        String res = callGroqAI("You are an expert personalized health coach. Respond ONLY with valid JSON array of strings.", prompt);
+        return res != null ? res : "[\"Stay hydrated throughout the day\", \"Take a 10-minute walk after your next meal\", \"Prioritize 7-8 hours of quality sleep\", \"Focus on mindful eating today\", \"Keep tracking your progress to stay motivated\"]";
+    }
+
     public String analyzeFoodImage(String base64Image) {
         WebClient client = webClientBuilder.build();
 
