@@ -87,7 +87,7 @@ public class AIService {
         WebClient client = webClientBuilder.build();
 
         Map<String, Object> body = Map.of(
-            "model", "meta-llama/llama-4-scout-17b-16e-instruct",
+            "model", "llama-3.2-11b-vision-preview",
             "messages", List.of(
                 Map.of("role", "user", "content", List.of(
                     Map.of("type", "text", "text", "Identify the food in this image. " +
@@ -131,7 +131,7 @@ public class AIService {
         } catch (Exception e) {
             log.error("Groq Vision AI call failed: {}", e.getMessage());
         }
-        return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"feedback\": \"We couldn't identify the food. Try logging manually.\"}";
+        return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"We couldn't identify the food. Try logging manually.\", \"chatStarter\": \"Can you help me identify this food?\"}";
     }
 
     public String getAIResponse(String userMessage, String userFullName, Long userId) {

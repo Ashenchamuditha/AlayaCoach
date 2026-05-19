@@ -37,6 +37,9 @@ public class User implements UserDetails {
     // For CLIENT: references their assigned COACH's id. Null for COACHes.
     private Long coachId;
 
+    @Builder.Default
+    private boolean emailVerified = false;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));
