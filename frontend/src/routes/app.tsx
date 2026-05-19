@@ -256,7 +256,7 @@ interface DailyTip {
 function ClientDashboard() {
   const { user, hydrate, token } = useAuth();
   const navigate = useNavigate();
-  const { tab: activeTab } = Route.useSearch();
+  const { tab: activeTab, prompt } = Route.useSearch();
   const [data, setData] = useState<DashboardData | null>(null);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
   const [dailyTips, setDailyTips] = useState<DailyTip[]>([]);
@@ -643,23 +643,22 @@ function ClientDashboard() {
                                 Complete
                               </Button>
                             )}
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 md:h-8 md:w-8 text-primary"
-                                onClick={() => setPreviewGoal(g)}
-                              >
-                                <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              </Button>
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 md:h-8 md:w-8 text-destructive"
-                                onClick={() => setGoalToDelete(g.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
-                              </Button>
-                            </div>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 md:h-8 md:w-8 text-primary"
+                              onClick={() => setPreviewGoal(g)}
+                            >
+                              <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-7 w-7 md:h-8 md:w-8 text-destructive"
+                              onClick={() => setGoalToDelete(g.id)}
+                            >
+                              <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                            </Button>
                           </div>
                         </motion.li>
                       ))}
@@ -835,7 +834,7 @@ function ClientDashboard() {
 
           {activeTab === "ai" && (
             <div className="-mx-4 flex-1 h-[calc(100dvh-130px)] md:mx-0 md:h-[600px]">
-              <AIAssistant initialPrompt={Route.useSearch().prompt} />
+              <AIAssistant initialPrompt={prompt} />
             </div>
           )}
 
