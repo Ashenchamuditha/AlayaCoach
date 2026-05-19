@@ -213,25 +213,6 @@ function RegisterPage() {
                     placeholder="••••••••"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>I am a...</Label>
-                  <div className="grid grid-cols-2 gap-2">
-                    {(["CLIENT", "COACH"] as Role[]).map((r) => (
-                      <button
-                        key={r}
-                        type="button"
-                        onClick={() => setRole(r)}
-                        className={`rounded-lg border px-4 py-2 text-sm font-medium transition ${
-                          role === r
-                            ? "border-primary bg-gradient-soft text-foreground"
-                            : "border-border text-muted-foreground hover:border-primary/40"
-                        }`}
-                      >
-                        {r === "CLIENT" ? "Client" : "Coach"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
                 {error && (
                   <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
                     {error}

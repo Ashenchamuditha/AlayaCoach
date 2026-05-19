@@ -22,12 +22,14 @@ D:\Alaya Master Coach\backend\src\main\java\com\alaya\dto\OtpVerifyRequest.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\dto\ResetPasswordRequest.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\dto\SendMessageRequest.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\MasterCoachApplication.java
+D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\ActivityLevel.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\AIChat.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\ChatMessage.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\Checkin.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\CoachFeedback.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\DailyTip.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\FoodEntry.java
+D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\Gender.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\Goal.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\Notification.java
 D:\Alaya Master Coach\backend\src\main\java\com\alaya\model\OtpToken.java

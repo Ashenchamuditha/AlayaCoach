@@ -67,7 +67,7 @@ public class AuthService {
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .fullName(req.getFullName())
-                .role(Role.valueOf(req.getRole().toUpperCase()))
+                .role(Role.CLIENT) // Force all public registrations to CLIENT
                 .coachId(coachId)
                 .emailVerified(true)
                 .build();

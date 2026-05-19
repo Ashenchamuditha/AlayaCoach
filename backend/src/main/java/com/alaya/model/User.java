@@ -8,6 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users", indexes = {
@@ -39,6 +40,20 @@ public class User implements UserDetails {
 
     @Builder.Default
     private boolean emailVerified = false;
+
+    // Biometrics and Profile
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    private LocalDate birthDate;
+    private Double currentWeight;
+    private Double targetWeight;
+    private Double heightCm;
+
+    @Enumerated(EnumType.STRING)
+    private ActivityLevel activityLevel;
+
+    private String primaryGoal; // e.g., "Weight Loss", "Muscle Gain", "Maintenance"
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
