@@ -2,14 +2,22 @@ import axios from "axios";
 
 export const API_BASE =
   import.meta.env.VITE_API_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.protocol}//${window.location.hostname}:8081/api`
-    : "http://localhost:8081/api");
+  (import.meta.env.MODE === "development"
+    ? "http://localhost:8081/api"
+    : `${window.location.protocol}//${window.location.hostname}:8081/api`);
+
+if (!import.meta.env.VITE_API_URL) {
+  if (import.meta.env.PROD) {
+    console.error(
+      "CRITICAL: VITE_API_URL is NOT defined! The app will likely fail to connect to the backend. " +
+      "Please set VITE_API_URL in your Vercel/deployment environment variables."
+    );
+  } else {
+    console.warn("VITE_API_URL is NOT defined. Falling back to localhost for development.");
+  }
+}
 
 console.log("API_BASE initialized as:", API_BASE);
-if (!import.meta.env.VITE_API_URL) {
-  console.warn("VITE_API_URL is NOT defined in environment variables! Falling back to localhost logic.");
-}
 
 export const api = axios.create({
   baseURL: API_BASE,
