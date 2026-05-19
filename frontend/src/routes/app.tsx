@@ -403,7 +403,6 @@ function ClientDashboard() {
 
     try {
       const { data: updatedGoal } = await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
-      await api.post("/checkins", { goalId: id, completed: nextStatus });
       
       // Update with actual server data to be safe
       setData((d) => {
