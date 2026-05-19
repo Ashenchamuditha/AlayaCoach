@@ -50,12 +50,17 @@ public class AIService {
     }
 
     public String generateCheckinFeedback(String clientNote) {
-        String res = callGroqAI("You are a professional accountability coach. Respond ONLY in English. " +
-                "Analyze the user's check-in. Be direct. If they are failing, give a tough-love actionable tip. " +
-                "If they are succeeding, give a challenge for tomorrow. " +
-                "Keep your response to a maximum of 2 sentences.", 
-                "My check-in note: " + clientNote);
-        return res != null ? res : "Keep up the great work! You're making progress.";
+        try {
+            String res = callGroqAI("You are a professional accountability coach. Respond ONLY in English. " +
+                    "Analyze the user's check-in. Be direct. If they are failing, give a tough-love actionable tip. " +
+                    "If they are succeeding, give a challenge for tomorrow. " +
+                    "Keep your response to a maximum of 2 sentences.", 
+                    "My check-in note: " + clientNote);
+            return res != null ? res : "Keep up the great work! You're making progress.";
+        } catch (Exception e) {
+            log.error("Failed to generate AI checkin feedback: {}", e.getMessage());
+            return "Check-in logged successfully. Keep going!";
+        }
     }
 
     public String generateFoodFeedback(String foodName, String portion) {

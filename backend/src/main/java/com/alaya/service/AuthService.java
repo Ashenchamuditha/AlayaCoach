@@ -1,10 +1,7 @@
 package com.alaya.service;
 
 import com.alaya.dto.*;
-import com.alaya.model.Notification;
-import com.alaya.model.OtpToken;
-import com.alaya.model.Role;
-import com.alaya.model.User;
+import com.alaya.model.*;
 import com.alaya.repository.UserRepository;
 import com.alaya.security.JwtUtils;
 import lombok.RequiredArgsConstructor;
@@ -48,14 +45,21 @@ public class AuthService {
             throw new IllegalArgumentException("Email already registered");
         }
         
-        // In a real app, you might want to re-verify the OTP here or check a "verified" flag in DB/Session.
-        // For simplicity, we'll assume OTP was verified in the previous step.
+        if (req.getPassword() == null || !req.getPassword().equals(req.getConfirmPassword())) {
+            throw new IllegalArgumentException("Passwords do not match");
+        }
 
         if (req.getFullName() == null || req.getFullName().isBlank()) {
             throw new IllegalArgumentException("Full name is required for registration");
         }
+        
         Long coachId = req.getCoachId();
-        if (Role.valueOf(req.getRole().toUpperCase()) == Role.CLIENT && coachId == null) {
+        Role role = Role.CLIENT;
+        try {
+            if (req.getRole() != null) role = Role.valueOf(req.getRole().toUpperCase());
+        } catch (Exception ignored) {}
+
+        if (role == Role.CLIENT && coachId == null) {
             coachId = userRepository.findAll().stream()
                     .filter(u -> u.getRole() == Role.COACH)
                     .map(User::getId)
@@ -63,15 +67,32 @@ public class AuthService {
                     .orElse(null);
         }
 
-        User user = User.builder()
+        User.UserBuilder builder = User.builder()
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
                 .fullName(req.getFullName())
-                .role(Role.CLIENT) // Force all public registrations to CLIENT
+                .role(role)
                 .coachId(coachId)
-                .emailVerified(true)
-                .build();
-        User saved = userRepository.save(user);
+                .emailVerified(true);
+
+        // Map Profile Data
+        if (req.getGender() != null) {
+            try {
+                builder.gender(Gender.valueOf(req.getGender().toUpperCase()));
+            } catch (Exception ignored) {}
+        }
+        builder.birthDate(req.getBirthDate());
+        builder.currentWeight(req.getCurrentWeight());
+        builder.targetWeight(req.getTargetWeight());
+        builder.heightCm(req.getHeightCm());
+        if (req.getActivityLevel() != null) {
+            try {
+                builder.activityLevel(ActivityLevel.valueOf(req.getActivityLevel().toUpperCase()));
+            } catch (Exception ignored) {}
+        }
+        builder.primaryGoal(req.getPrimaryGoal());
+
+        User saved = userRepository.save(builder.build());
 
         // ... (rest of the notifications)
         notificationService.createNotification(

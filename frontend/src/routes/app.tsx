@@ -264,6 +264,7 @@ function ClientDashboard() {
   const [previewGoal, setPreviewGoal] = useState<Goal | null>(null);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
   const [isRefreshingTips, setIsRefreshingTips] = useState(false);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   const fetchDashboard = () => {
     api
@@ -382,8 +383,6 @@ function ClientDashboard() {
   }
 
   const completedCount = (data.goals || []).filter((g) => g.done).length;
-
-  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   const toggle = async (id: string) => {
     if (togglingIds.has(id)) return;
