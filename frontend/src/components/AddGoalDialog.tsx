@@ -62,13 +62,14 @@ interface Props {
 export function AddGoalDialog({ onAdd, clientId }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [form, setForm] = useState<NewGoalInput>({
     title: "",
     description: "",
     clientId: clientId,
     category: "Wellness",
     priority: "medium",
-    dueDate: "", // Empty to force manual selection or at least force validation
+    dueDate: "",
     endDate: "",
     startTime: "09:00",
     endTime: "10:00",
@@ -77,7 +78,22 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     targetUnit: "",
   });
 
-  // ... (keep reset logic but updated)
+  const updateTime = (field: "startTime" | "endTime", value: string) => {
+    const newForm = { ...form, [field]: value };
+    
+    if (newForm.startTime && newForm.endTime) {
+      const [sh, sm] = newForm.startTime.split(":").map(Number);
+      const [eh, em] = newForm.endTime.split(":").map(Number);
+      const start = sh * 60 + sm;
+      let end = eh * 60 + em;
+      
+      if (end < start) end += 24 * 60;
+      newForm.durationMinutes = end - start;
+    }
+    
+    setForm(newForm);
+  };
+
   const reset = () => {
     setForm({
       title: "",
@@ -99,7 +115,6 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Explicit check for required fields including Due Date
     const fieldErrors: Record<string, string> = {};
     if (!form.title || form.title.trim().length < 3) fieldErrors.title = "Title must be at least 3 chars";
     if (!form.category) fieldErrors.category = "Category is required";
@@ -120,7 +135,6 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
       
       toast.success("Successfully goal is added");
       
-      // Call parent update then close and reset
       onAdd({
         ...payload,
         id: String(data.id),
