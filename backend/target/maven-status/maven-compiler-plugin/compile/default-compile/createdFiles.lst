@@ -24,6 +24,7 @@ com\alaya\service\GoalService.class
 com\alaya\service\NotificationService.class
 com\alaya\controller\GoalController$1.class
 com\alaya\controller\AIChatController.class
+com\alaya\model\ActivityLevel.class
 com\alaya\model\OtpToken$TokenType.class
 com\alaya\dto\AuthResponse.class
 com\alaya\repository\NotificationRepository.class
@@ -65,6 +66,7 @@ com\alaya\controller\CheckinController.class
 com\alaya\service\OtpService.class
 com\alaya\model\Checkin.class
 com\alaya\controller\AIController.class
+com\alaya\model\Gender.class
 com\alaya\controller\AuthController.class
 com\alaya\service\AIChatService.class
 com\alaya\repository\CheckinRepository.class

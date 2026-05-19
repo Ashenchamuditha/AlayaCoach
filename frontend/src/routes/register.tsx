@@ -281,27 +281,6 @@ function RegisterPage() {
                     placeholder="••••••••"
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <Label>Register as</Label>
-                  <div className="flex gap-4">
-                    <button
-                      type="button"
-                      onClick={() => setRole("CLIENT")}
-                      className={`flex-1 rounded-lg border p-3 text-center transition ${role === "CLIENT" ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"}`}
-                    >
-                      <p className="text-xs font-bold uppercase">Client</p>
-                      <p className="text-[10px] opacity-60">I want a coach</p>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setRole("COACH")}
-                      className={`flex-1 rounded-lg border p-3 text-center transition ${role === "COACH" ? "border-primary bg-primary/5 text-primary" : "border-border hover:bg-muted"}`}
-                    >
-                      <p className="text-xs font-bold uppercase">Coach</p>
-                      <p className="text-[10px] opacity-60">I want to coach</p>
-                    </button>
-                  </div>
-                </div>
                 {error && (
                   <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
                     {error}
