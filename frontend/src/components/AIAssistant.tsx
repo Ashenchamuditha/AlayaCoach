@@ -114,18 +114,18 @@ export function AIAssistant({ initialPrompt }: Props) {
   };
 
   return (
-    <Card className="flex h-full min-h-[500px] flex-col overflow-hidden p-0 border-none shadow-none md:border-solid md:shadow-sm md:h-[600px] md:rounded-xl">
-      <div className="flex items-center gap-3 border-b border-border bg-gradient-soft px-4 py-3 shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-glow">
-          <Sparkles className="h-5 w-5" />
+    <Card className="flex h-full min-h-[450px] flex-col overflow-hidden p-0 border-none shadow-none md:border-solid md:shadow-sm md:h-[600px] md:rounded-xl">
+      <div className="flex items-center gap-2.5 md:gap-3 border-b border-border bg-gradient-soft px-3 md:px-4 py-2.5 md:py-3 shrink-0">
+        <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-gradient-brand text-white shadow-glow">
+          <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
         </div>
         <div>
-          <p className="text-sm font-semibold">AI Assistant</p>
-          <p className="text-xs text-muted-foreground">Always here to help</p>
+          <p className="text-xs md:text-sm font-bold">AI Assistant</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-tight">Always here to help</p>
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-4 md:p-6">
+      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-3 md:p-6">
         <AnimatePresence initial={false}>
           {messages.map((m) => {
             const mine = m.role === "user";
@@ -138,13 +138,13 @@ export function AIAssistant({ initialPrompt }: Props) {
               >
                 <div
                   className={cn(
-                    "max-w-[80%] rounded-2xl px-4 py-2 text-sm shadow-sm",
+                    "max-w-[88%] md:max-w-[80%] rounded-2xl px-3.5 py-2 text-xs md:text-sm shadow-sm",
                     mine
                       ? "rounded-br-sm bg-gradient-brand text-white"
                       : "rounded-bl-sm border border-border bg-card text-foreground",
                   )}
                 >
-                  <p className="whitespace-pre-wrap break-words">{m.content}</p>
+                  <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
                 </div>
               </motion.div>
             );
@@ -152,11 +152,11 @@ export function AIAssistant({ initialPrompt }: Props) {
         </AnimatePresence>
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-sm border border-border bg-card px-4 py-2 text-sm">
+            <div className="rounded-2xl rounded-bl-sm border border-border bg-card px-3 py-1.5 text-sm">
               <span className="inline-flex gap-1">
-                <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.2s]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-primary [animation-delay:-0.1s]" />
-                <span className="h-2 w-2 animate-bounce rounded-full bg-primary" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.2s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:-0.1s]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary" />
               </span>
             </div>
           </div>
@@ -164,12 +164,12 @@ export function AIAssistant({ initialPrompt }: Props) {
       </div>
 
       {messages.length <= 1 && (
-        <div className="flex flex-wrap gap-2 border-t border-border bg-background px-3 py-2">
+        <div className="flex flex-wrap gap-1.5 border-t border-border bg-background px-3 py-2">
           {suggestions.map((s) => (
             <button
               key={s}
               onClick={() => send(s)}
-              className="rounded-full border border-border bg-muted/40 px-3 py-1 text-xs hover:bg-muted"
+              className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] md:text-xs font-medium hover:bg-muted transition-colors active:scale-95"
             >
               {s}
             </button>
@@ -182,19 +182,19 @@ export function AIAssistant({ initialPrompt }: Props) {
           e.preventDefault();
           send();
         }}
-        className="flex items-center gap-2 border-t border-border bg-background p-3"
+        className="flex items-center gap-2 border-t border-border bg-background p-2.5 md:p-3"
       >
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Ask the AI Assistant..."
-          className="flex-1"
+          className="flex-1 text-sm h-9 md:h-10 px-3"
         />
         <Button
           type="submit"
           size="icon"
           disabled={loading}
-          className="bg-gradient-brand text-white hover:opacity-90"
+          className="h-9 w-9 md:h-10 md:w-10 bg-gradient-brand text-white hover:opacity-90 shrink-0"
         >
           <Send className="h-4 w-4" />
         </Button>

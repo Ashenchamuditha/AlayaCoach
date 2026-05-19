@@ -79,17 +79,17 @@ export function ChatInterface({ peerId, peerName }: Props) {
   }
 
   return (
-    <Card className="flex h-full min-h-[500px] flex-col overflow-hidden p-0 border-none shadow-none md:border-solid md:shadow-sm md:h-[700px] md:rounded-xl">
-      <div className="flex items-center gap-3 border-b border-border bg-gradient-soft px-4 py-3 shrink-0">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-brand text-sm font-semibold text-white shadow-glow">
+    <Card className="flex h-full min-h-[450px] flex-col overflow-hidden p-0 border-none shadow-none md:border-solid md:shadow-sm md:h-[700px] md:rounded-xl">
+      <div className="flex items-center gap-2.5 md:gap-3 border-b border-border bg-gradient-soft px-3 md:px-4 py-2.5 md:py-3 shrink-0">
+        <div className="flex h-8 w-8 md:h-10 md:w-10 items-center justify-center rounded-full bg-gradient-brand text-[10px] md:text-sm font-semibold text-white shadow-glow">
           {peerName.slice(0, 2).toUpperCase()}
         </div>
         <div>
-          <p className="text-sm font-semibold">{peerName}</p>
+          <p className="text-xs md:text-sm font-bold truncate">{peerName}</p>
           <div className="flex items-center gap-1.5">
             <div className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
-            <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
-              Your Human Coach
+            <p className="text-[9px] md:text-[10px] text-muted-foreground uppercase font-bold tracking-wider">
+              Human Coach
             </p>
           </div>
         </div>
@@ -97,7 +97,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
 
       <div
         ref={scrollRef}
-        className="relative flex-1 space-y-4 overflow-y-auto p-4 md:p-6 bg-[#fdfdfd] dark:bg-[#0c0c0d]"
+        className="relative flex-1 space-y-4 overflow-y-auto p-3 md:p-6 bg-[#fdfdfd] dark:bg-[#0c0c0d]"
       >
         {/* Background Image Overlay */}
         <div 
@@ -122,7 +122,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
                 >
                   <div
                     className={cn(
-                      "max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all",
+                      "max-w-[88%] md:max-w-[75%] rounded-2xl px-3.5 py-2 md:py-2.5 text-xs md:text-sm shadow-sm transition-all",
                       mine
                         ? "rounded-br-sm bg-gradient-brand text-white shadow-md shadow-primary/10"
                         : "rounded-bl-sm bg-card text-foreground border border-border/50",
@@ -131,7 +131,7 @@ export function ChatInterface({ peerId, peerName }: Props) {
                     <p className="whitespace-pre-wrap break-words leading-relaxed">{m.content}</p>
                     <div
                       className={cn(
-                        "mt-1.5 flex items-center justify-end gap-1.5 text-[9px] font-medium tracking-tight",
+                        "mt-1 flex items-center justify-end gap-1 text-[8px] md:text-[9px] font-medium tracking-tight",
                         mine ? "text-white/70" : "text-muted-foreground/70",
                       )}
                     >
@@ -161,15 +161,15 @@ export function ChatInterface({ peerId, peerName }: Props) {
           e.preventDefault();
           send();
         }}
-        className="flex items-center gap-2 border-t border-border bg-background p-3"
+        className="flex items-center gap-2 border-t border-border bg-background p-2.5 md:p-3"
       >
         <Input
           value={text}
           onChange={(e) => setText(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1"
+          className="flex-1 text-sm h-9 md:h-10 px-3"
         />
-        <Button type="submit" size="icon" className="bg-gradient-brand text-white hover:opacity-90">
+        <Button type="submit" size="icon" className="h-9 w-9 md:h-10 md:w-10 bg-gradient-brand text-white hover:opacity-90 shrink-0">
           <Send className="h-4 w-4" />
         </Button>
       </form>

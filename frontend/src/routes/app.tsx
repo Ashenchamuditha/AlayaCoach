@@ -56,6 +56,7 @@ import { toast } from "sonner";
 import { api, getMediaUrl } from "@/lib/api";
 import { createChatClient } from "@/lib/ws";
 import { useAuth } from "@/store/auth";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app")({
   validateSearch: (search: Record<string, unknown>) => {
