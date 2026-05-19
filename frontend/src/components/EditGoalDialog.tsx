@@ -42,9 +42,9 @@ const schema = z.object({
   description: z.string().trim().max(500).optional(),
   category: z.string().trim().min(1, "Category is required"),
   priority: z.enum(["low", "medium", "high"]),
-  dueDate: z.string().min(1, "Due date is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
+  dueDate: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
   durationMinutes: z.coerce.number().int().min(1).max(1440).optional(),
   targetValue: z.coerce.number().optional(),
   targetUnit: z.string().optional(),
@@ -62,11 +62,11 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
   const [form, setForm] = useState({
     title: "",
     description: "",
-    category: "Wellness",
+    category: "",
     priority: "medium",
     dueDate: "",
-    startTime: "09:00",
-    endTime: "10:00",
+    startTime: "",
+    endTime: "",
     durationMinutes: 60,
     targetValue: 0,
     targetUnit: "",
@@ -78,11 +78,11 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
       setForm({
         title: goal.title || "",
         description: goal.description || "",
-        category: goal.category || "Wellness",
+        category: goal.category || "",
         priority: goal.priority ? goal.priority.toLowerCase() : "medium",
-        dueDate: goal.dueDate ? goal.dueDate.slice(0, 10) : new Date().toISOString().slice(0, 10),
-        startTime: goal.startTime || "09:00",
-        endTime: goal.endTime || "10:00",
+        dueDate: goal.dueDate ? goal.dueDate.slice(0, 10) : "",
+        startTime: goal.startTime || "",
+        endTime: goal.endTime || "",
         durationMinutes: goal.durationMinutes || 60,
         targetValue: goal.targetValue || 0,
         targetUnit: goal.targetUnit || "",
@@ -92,6 +92,7 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
 
   const calculateDuration = (start: string, end: string) => {
     try {
+      if (!start || !end) return 60;
       const [sh, sm] = start.split(":").map(Number);
       const [eh, em] = end.split(":").map(Number);
       const startTotal = sh * 60 + sm;
@@ -170,22 +171,13 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Category *</Label>
-              <Select
+              <Label htmlFor="edit-category">Category *</Label>
+              <Input
+                id="edit-category"
                 value={form.category}
-                onValueChange={(v) => setForm({ ...form, category: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Wellness">Wellness</SelectItem>
-                  <SelectItem value="Fitness">Fitness</SelectItem>
-                  <SelectItem value="Work">Work</SelectItem>
-                  <SelectItem value="Learning">Learning</SelectItem>
-                  <SelectItem value="Mindset">Mindset</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+              />
+              {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Priority *</Label>
@@ -206,7 +198,7 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-startTime">Start time *</Label>
+              <Label htmlFor="edit-startTime">Start time</Label>
               <Input
                 id="edit-startTime"
                 type="time"
@@ -215,7 +207,7 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="edit-endTime">End time *</Label>
+              <Label htmlFor="edit-endTime">End time</Label>
               <Input
                 id="edit-endTime"
                 type="time"
@@ -226,7 +218,7 @@ export function EditGoalDialog({ goal, open, onOpenChange, onUpdate }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-dueDate">Due date *</Label>
+              <Label htmlFor="edit-dueDate">Due date</Label>
               <Input
                 id="edit-dueDate"
                 type="date"
