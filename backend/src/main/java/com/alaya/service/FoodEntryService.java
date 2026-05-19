@@ -34,11 +34,15 @@ public class FoodEntryService {
         
         Integer estimatedCalories = 0;
         String advice = "That's a good choice! Keep monitoring your portions.";
+        String classification = "HEALTHY";
+        String chatStarter = "How can I improve this meal?";
 
         try {
             JsonNode node = objectMapper.readTree(aiJson);
             estimatedCalories = node.get("calories").asInt();
             advice = node.get("feedback").asText();
+            if (node.has("classification")) classification = node.get("classification").asText();
+            if (node.has("chatStarter")) chatStarter = node.get("chatStarter").asText();
         } catch (Exception e) {
             log.error("Failed to parse AI food feedback: {}", e.getMessage());
         }
@@ -49,6 +53,8 @@ public class FoodEntryService {
                 .portion(portion)
                 .calories(estimatedCalories)
                 .aiFeedback(advice)
+                .classification(classification)
+                .chatStarter(chatStarter)
                 .build();
         
         return foodEntryRepository.save(entry);
@@ -70,12 +76,16 @@ public class FoodEntryService {
         String foodName = "Uploaded Food";
         Integer calories = 0;
         String advice = "Analysis failed. Please log manually.";
+        String classification = "HEALTHY";
+        String chatStarter = "Can you help me identify this food?";
 
         try {
             JsonNode node = objectMapper.readTree(aiJson);
             foodName = node.get("foodName").asText();
             calories = node.get("calories").asInt();
             advice = node.get("feedback").asText();
+            if (node.has("classification")) classification = node.get("classification").asText();
+            if (node.has("chatStarter")) chatStarter = node.get("chatStarter").asText();
         } catch (Exception e) {
             log.error("Failed to parse AI vision feedback: {}", e.getMessage());
         }
@@ -85,6 +95,8 @@ public class FoodEntryService {
                 .foodName(foodName)
                 .calories(calories)
                 .aiFeedback(advice)
+                .classification(classification)
+                .chatStarter(chatStarter)
                 .imageUrl(imageUrl)
                 .build();
         
