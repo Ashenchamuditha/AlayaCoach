@@ -101,26 +101,41 @@ function RegisterPage() {
       setError("Passwords do not match");
       return;
     }
+    
+    // Final validation
+    if (!birthDate) {
+      setError("Please select your birth date");
+      return;
+    }
+
     setError(null);
     setLoading(true);
     try {
-      const { data } = await api.post<{
-        token: string;
-        user: { id: string; name: string; email: string; role: Role };
-      }>("/auth/register", { 
-        name, 
-        email, 
-        password, 
+      // Safely parse numeric fields, defaulting to 0 or null if invalid
+      const parsedCurrentWeight = parseFloat(currentWeight);
+      const parsedTargetWeight = parseFloat(targetWeight);
+      const parsedHeight = parseFloat(heightCm);
+
+      const payload = {
+        name,
+        email,
+        password,
         confirmPassword,
         role,
         gender,
         birthDate,
-        currentWeight: parseFloat(currentWeight),
-        targetWeight: parseFloat(targetWeight),
-        heightCm: parseFloat(heightCm),
+        currentWeight: isNaN(parsedCurrentWeight) ? null : parsedCurrentWeight,
+        targetWeight: isNaN(parsedTargetWeight) ? null : parsedTargetWeight,
+        heightCm: isNaN(parsedHeight) ? null : parsedHeight,
         activityLevel,
         primaryGoal
-      });
+      };
+
+      const { data } = await api.post<{
+        token: string;
+        user: { id: string; name: string; email: string; role: Role };
+      }>("/auth/register", payload);
+      
       setAuth(data.user, data.token);
       navigate({ to: data.user.role === "COACH" ? "/coach" : "/app" });
     } catch (err: unknown) {
@@ -410,20 +425,3 @@ function RegisterPage() {
   );
 }
 
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              Already have an account?{" "}
-              <Link to="/login" className="font-medium text-primary hover:underline">
-                Sign in
-              </Link>
-            </p>
-            <div className="mt-4 border-t border-border/40 pt-4 text-center">
-              <Link to="/" className="text-xs text-muted-foreground hover:text-primary transition">
-                ← Back to Home
-              </Link>
-            </div>
-          </Card>
-        </motion.div>
-      </main>
-    </div>
-  );
-}

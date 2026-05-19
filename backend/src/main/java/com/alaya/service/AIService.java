@@ -88,18 +88,26 @@ public class AIService {
         return res != null ? res : "[\"Stay hydrated throughout the day\", \"Take a 10-minute walk after your next meal\", \"Prioritize 7-8 hours of quality sleep\", \"Focus on mindful eating today\", \"Keep tracking your progress to stay motivated\"]";
     }
 
-    public String analyzeFoodImage(String base64Image) {
+    public String analyzeFoodImage(String base64Image, String manualName, String manualPortion) {
         // Use a dedicated WebClient with longer timeout for vision tasks
         WebClient client = webClientBuilder
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB limit
                 .build();
 
+        String context = "";
+        if (manualName != null && !manualName.trim().isEmpty()) {
+            context += " The user says this is: " + manualName + ".";
+        }
+        if (manualPortion != null && !manualPortion.trim().isEmpty()) {
+            context += " The user says the portion is: " + manualPortion + ".";
+        }
+
         Map<String, Object> body = Map.of(
             "model", "llama-3.2-11b-vision-preview",
             "messages", List.of(
                 Map.of("role", "user", "content", List.of(
-                    Map.of("type", "text", "text", "Identify the food in this image. " +
-                            "Estimate calories. Categorize as 'HEALTHY' or 'UNHEALTHY'. " +
+                    Map.of("type", "text", "text", "Identify the food in this image." + context + 
+                            " Estimate calories. Categorize as 'HEALTHY' or 'UNHEALTHY'. " +
                             "Give 1 sentence of advice and 1 suggested chat question. " +
                             "Respond ONLY with a JSON object: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
                     Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))

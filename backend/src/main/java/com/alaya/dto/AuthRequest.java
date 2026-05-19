@@ -7,23 +7,30 @@ import lombok.Data;
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class AuthRequest {
-    @Email @NotBlank public String email;
-    @NotBlank       public String password;
-    public String confirmPassword;
+    @Email 
+    @NotBlank 
+    private String email;
+
+    @NotBlank 
+    private String password;
+
+    private String confirmPassword;
     
     @JsonProperty("name")
-    public String fullName;
+    private String fullName;
 
-    public String role; // "COACH" or "CLIENT"
-    public Long coachId; // required if role = CLIENT
+    private String role; // "COACH" or "CLIENT"
+    private Long coachId; // required if role = CLIENT
 
     // Profile Data
-    public String gender;
-    public LocalDate birthDate;
-    public Double currentWeight;
-    public Double targetWeight;
-    public Double heightCm;
-    public String activityLevel;
-    public String primaryGoal;
+    private String gender;
+    private java.time.LocalDate birthDate;
+    private Double currentWeight;
+    private Double targetWeight;
+    private Double heightCm;
+    private String activityLevel;
+    private String primaryGoal;
 }
