@@ -4,17 +4,12 @@ export const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.MODE === "development"
     ? "http://localhost:8081/api"
-    : "/api"); // Fallback to relative path if not defined, which is safer than guessing a host
+    : "https://alayacoach-production.up.railway.app/api"); // Hardcoded fallback for production if Vercel fails to pass the variable
 
-if (!import.meta.env.VITE_API_URL) {
-  if (import.meta.env.PROD) {
-    console.error(
-      "CRITICAL: VITE_API_URL is NOT defined! The app is currently falling back to relative paths, which will likely fail since the backend is hosted on Railway.\n\n" +
-      "FIX: Please set VITE_API_URL in your Vercel Environment Variables to your Railway backend URL (e.g., https://your-app.up.railway.app/api)."
-    );
-  } else {
-    console.warn("VITE_API_URL is NOT defined. Falling back to localhost for development.");
-  }
+if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
+  console.warn(
+    "VITE_API_URL was not found in environment. Using hardcoded production fallback: https://alayacoach-production.up.railway.app/api"
+  );
 }
 
 console.log("API_BASE initialized as:", API_BASE);
