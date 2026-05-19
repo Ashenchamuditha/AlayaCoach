@@ -111,8 +111,8 @@ public class AIService {
                     .onStatus(status -> status.isError(), response -> 
                         response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    log.error("Groq Vision AI Error ({}): {}", response.statusCode(), errorBody);
-                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI call failed"));
+                                    log.error("GROQ VISION ERROR ({}): {}", response.statusCode(), errorBody);
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI failed: " + errorBody));
                                 })
                     )
                     .bodyToMono(Map.class)

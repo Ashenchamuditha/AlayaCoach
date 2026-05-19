@@ -6,6 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/SiteHeader";
+import { OtpInput } from "@/components/OtpInput";
 import { api } from "@/lib/api";
 import { useAuth, type Role } from "@/store/auth";
 import axios from "axios";
@@ -52,7 +53,7 @@ function RegisterPage() {
       setStep("OTP");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Failed to send OTP");
+        setError(err.response?.data?.message || "Failed to send OTP. Please check your SMTP settings.");
       } else {
         setError("An unexpected error occurred");
       }
@@ -63,6 +64,10 @@ function RegisterPage() {
 
   const verifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (otp.length < 6) {
+      setError("Please enter the full 6-digit code");
+      return;
+    }
     setError(null);
     setLoading(true);
     try {
@@ -87,7 +92,7 @@ function RegisterPage() {
       const { data } = await api.post<{
         token: string;
         user: { id: string; name: string; email: string; role: Role };
-      }>("/auth/register", { fullName: name, email, password, role });
+      }>("/auth/register", { name, email, password, role });
       setAuth(data.user, data.token);
       navigate({ to: data.user.role === "COACH" ? "/coach" : "/app" });
     } catch (err: unknown) {
@@ -111,8 +116,14 @@ function RegisterPage() {
           className="w-full max-w-md"
         >
           <Card className="p-6 md:p-8 shadow-glow">
-            <h1 className="text-xl md:text-2xl font-bold">Create your account</h1>
-            <p className="mt-1 text-xs md:text-sm text-muted-foreground">Join Alaya Master Coach today.</p>
+            <h1 className="text-xl md:text-2xl font-bold">
+              {step === "DETAILS" ? "Complete your profile" : "Create your account"}
+            </h1>
+            <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+              {step === "EMAIL" && "Enter your email to get started."}
+              {step === "OTP" && "Enter the 6-digit code we sent to your email."}
+              {step === "DETAILS" && "Last step! Tell us who you are."}
+            </p>
 
             {step === "EMAIL" && (
               <form onSubmit={sendOtp} className="mt-5 md:mt-6 space-y-4">
@@ -127,7 +138,11 @@ function RegisterPage() {
                     placeholder="you@example.com"
                   />
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+                    {error}
+                  </div>
+                )}
                 <Button
                   type="submit"
                   disabled={loading}
@@ -139,37 +154,44 @@ function RegisterPage() {
             )}
 
             {step === "OTP" && (
-              <form onSubmit={verifyOtp} className="mt-5 md:mt-6 space-y-4">
-                <div className="space-y-1.5">
-                  <Label htmlFor="otp">Verification Code</Label>
-                  <Input
-                    id="otp"
-                    required
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter 6-digit code"
-                    className="text-center text-lg tracking-widest"
-                    maxLength={6}
-                  />
+              <form onSubmit={verifyOtp} className="mt-5 md:mt-6 space-y-6">
+                <div className="space-y-4">
+                  <Label className="block text-center text-sm font-medium">Verification Code</Label>
+                  <OtpInput value={otp} onChange={setOtp} />
                   <p className="text-[10px] text-muted-foreground text-center">
-                    We sent a code to <span className="font-medium">{email}</span>
+                    We sent a code to <span className="font-semibold text-foreground">{email}</span>. 
+                    It expires in 5 minutes.
                   </p>
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+                    {error}
+                  </div>
+                )}
                 <Button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || otp.length < 6}
                   className="w-full bg-gradient-brand text-white hover:opacity-90"
                 >
                   {loading ? "Verifying..." : "Verify email"}
                 </Button>
-                <button
-                  type="button"
-                  onClick={() => setStep("EMAIL")}
-                  className="w-full text-xs text-muted-foreground hover:text-primary transition"
-                >
-                  Use a different email
-                </button>
+                <div className="flex flex-col gap-2">
+                  <button
+                    type="button"
+                    onClick={sendOtp}
+                    disabled={loading}
+                    className="text-xs text-primary hover:underline transition font-medium"
+                  >
+                    Didn't get a code? Resend
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStep("EMAIL")}
+                    className="text-xs text-muted-foreground hover:text-primary transition"
+                  >
+                    ← Use a different email
+                  </button>
+                </div>
               </form>
             )}
 
@@ -177,7 +199,7 @@ function RegisterPage() {
               <form onSubmit={submit} className="mt-5 md:mt-6 space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} />
+                  <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Create Password</Label>
@@ -188,6 +210,7 @@ function RegisterPage() {
                     minLength={6}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
                   />
                 </div>
                 <div className="space-y-1.5">
@@ -209,7 +232,11 @@ function RegisterPage() {
                     ))}
                   </div>
                 </div>
-                {error && <p className="text-sm text-destructive">{error}</p>}
+                {error && (
+                  <div className="rounded-lg bg-destructive/10 p-3 text-xs text-destructive">
+                    {error}
+                  </div>
+                )}
                 <Button
                   type="submit"
                   disabled={loading}
