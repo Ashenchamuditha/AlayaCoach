@@ -84,7 +84,10 @@ public class AIService {
     }
 
     public String analyzeFoodImage(String base64Image) {
-        WebClient client = webClientBuilder.build();
+        // Use a dedicated WebClient with longer timeout for vision tasks
+        WebClient client = webClientBuilder
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB limit
+                .build();
 
         Map<String, Object> body = Map.of(
             "model", "llama-3.2-11b-vision-preview",
@@ -97,8 +100,8 @@ public class AIService {
                     Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))
                 ))
             ),
-            "max_tokens", 300,
-            "temperature", 0.7
+            "max_tokens", 512,
+            "temperature", 0.1 // Lower temperature for more consistent JSON
         );
 
         try {
@@ -112,10 +115,11 @@ public class AIService {
                         response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
                                     log.error("GROQ VISION ERROR ({}): {}", response.statusCode(), errorBody);
-                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI failed: " + errorBody));
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI failed"));
                                 })
                     )
                     .bodyToMono(Map.class)
+                    .timeout(java.time.Duration.ofSeconds(30)) // Increased timeout to 30 seconds
                     .map(response -> {
                         if (response != null && response.containsKey("choices")) {
                             List<?> choices = (List<?>) response.get("choices");
@@ -129,7 +133,7 @@ public class AIService {
                     })
                     .block();
         } catch (Exception e) {
-            log.error("Groq Vision AI call failed: {}", e.getMessage());
+            log.error("Groq Vision AI call failed after 30s: {}", e.getMessage());
         }
         return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"We couldn't identify the food. Try logging manually.\", \"chatStarter\": \"Can you help me identify this food?\"}";
     }
