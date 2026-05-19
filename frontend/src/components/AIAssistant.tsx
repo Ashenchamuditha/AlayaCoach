@@ -36,11 +36,21 @@ const fallbackReply = (text: string) => {
   return "I'm here to help with your fitness, diet, and mindset. Break your next step into a 5-minute action and let me know how it goes!";
 };
 
-export function AIAssistant() {
+interface Props {
+  initialPrompt?: string;
+}
+
+export function AIAssistant({ initialPrompt }: Props) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(initialPrompt || "");
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (initialPrompt) {
+      setText(initialPrompt);
+    }
+  }, [initialPrompt]);
 
   useEffect(() => {
     api.get<AIMessage[]>("/ai/history").then((r) => {

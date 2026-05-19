@@ -70,10 +70,10 @@ function LoginPage() {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md"
         >
-          <Card className="p-8 shadow-glow">
-            <h1 className="text-2xl font-bold">Welcome back</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Sign in to continue your journey.</p>
-            <form onSubmit={submit} className="mt-6 space-y-4">
+          <Card className="p-6 md:p-8 shadow-glow">
+            <h1 className="text-xl md:text-2xl font-bold">Welcome back</h1>
+            <p className="mt-1 text-xs md:text-sm text-muted-foreground">Sign in to continue your journey.</p>
+            <form onSubmit={submit} className="mt-5 md:mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
                 <Input
