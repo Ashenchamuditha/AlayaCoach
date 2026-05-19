@@ -248,15 +248,22 @@ function GoalPreviewDialog({
   );
 }
 
+interface DailyTip {
+  id: number;
+  content: string;
+}
+
 function ClientDashboard() {
   const { user, hydrate, token } = useAuth();
   const navigate = useNavigate();
   const { tab: activeTab } = Route.useSearch();
   const [data, setData] = useState<DashboardData | null>(null);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
+  const [dailyTips, setDailyTips] = useState<DailyTip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [previewGoal, setPreviewGoal] = useState<Goal | null>(null);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  const [isRefreshingTips, setIsRefreshingTips] = useState(false);
 
   const fetchDashboard = () => {
     api
@@ -275,6 +282,26 @@ function ClientDashboard() {
       .catch((err) => console.error("Food entries fetch failed:", err));
   };
 
+  const fetchDailyTips = () => {
+    api
+      .get<DailyTip[]>("/tips/daily")
+      .then((r) => setDailyTips(r.data))
+      .catch((err) => console.error("Daily tips fetch failed:", err));
+  };
+
+  const refreshTips = async () => {
+    setIsRefreshingTips(true);
+    try {
+      const { data } = await api.post<DailyTip[]>("/tips/refresh");
+      setDailyTips(data);
+      toast.success("AI generated new tips for you!");
+    } catch (err) {
+      toast.error("Failed to refresh tips");
+    } finally {
+      setIsRefreshingTips(false);
+    }
+  };
+
   useEffect(() => {
     hydrate();
   }, [hydrate]);
@@ -289,6 +316,7 @@ function ClientDashboard() {
   useEffect(() => {
     fetchDashboard();
     fetchFoodEntries();
+    fetchDailyTips();
   }, []);
 
   useEffect(() => {
@@ -774,16 +802,31 @@ function ClientDashboard() {
                   )}
                 </div>
                 <Card className="p-4 md:p-6 h-fit bg-muted/30 border-none shadow-none hidden lg:block">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-4">Daily Tips</h3>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn("h-6 w-6 text-muted-foreground", isRefreshingTips && "animate-spin")}
+                      onClick={refreshTips}
+                      disabled={isRefreshingTips}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                    </Button>
+                  </div>
                   <ul className="space-y-3 text-sm font-medium">
-                    <li className="flex items-start gap-2.5">
-                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span>Drink at least 8 glasses of water.</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span>Prioritize protein in every meal.</span>
-                    </li>
+                    {dailyTips.length > 0 ? (
+                      dailyTips.map((tip) => (
+                        <li key={tip.id} className="flex items-start gap-2.5">
+                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                          <span>{tip.content}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <div className="py-4 text-center">
+                        <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                      </div>
+                    )}
                   </ul>
                 </Card>
               </div>
