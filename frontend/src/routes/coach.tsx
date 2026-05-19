@@ -341,7 +341,12 @@ function CoachDashboard() {
         fetchClients();
       },
       (update) => {
-        if (update.type === "GOAL_UPDATE" || update.type === "GOAL_DELETED") {
+        if (
+          update.type === "GOAL_UPDATE" ||
+          update.type === "GOAL_UPDATED" ||
+          update.type === "GOAL_DELETED" ||
+          update.type === "NEW_NOTIFICATION"
+        ) {
           fetchClients();
           if (selected && String(selected.id) === String(update.clientId)) {
             api.get<Goal[]>(`/goals/client/${selected.id}`).then((r) => {

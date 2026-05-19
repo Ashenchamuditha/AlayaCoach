@@ -297,8 +297,10 @@ function ClientDashboard() {
       (update) => {
         if (
           update.type === "GOAL_UPDATE" ||
+          update.type === "GOAL_UPDATED" ||
           update.type === "GOAL_DELETED" ||
-          update.type === "FOOD_FEEDBACK"
+          update.type === "FOOD_FEEDBACK" ||
+          update.type === "NEW_NOTIFICATION"
         ) {
           fetchDashboard();
           if (update.type === "FOOD_FEEDBACK") {
@@ -368,8 +370,18 @@ function ClientDashboard() {
     }
 
     try {
-      await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
+      const { data: updatedGoal } = await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
       await api.post("/checkins", { goalId: id, completed: nextStatus });
+      
+      // Update with actual server data to be safe
+      setData((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          goals: d.goals.map((g) => (g.id === id ? { ...g, done: updatedGoal.status === "COMPLETED" } : g)),
+        };
+      });
+      
       fetchDashboard();
     } catch {
       toast.error("Failed to update status");

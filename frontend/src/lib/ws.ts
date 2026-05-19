@@ -1,5 +1,6 @@
 import { Client, type IMessage } from "@stomp/stompjs";
 import SockJS from "sockjs-client";
+import { API_BASE } from "./api";
 
 export interface ChatMessage {
   id?: string | number;
@@ -23,10 +24,9 @@ export function createChatClient(
   onMessage: (m: ChatMessage) => void,
   onUpdate?: (u: GenericUpdate) => void,
 ) {
-  const wsUrl =
-    typeof window !== "undefined"
-      ? `${window.location.protocol}//${window.location.hostname}:8081/ws-chat`
-      : "http://localhost:8081/ws-chat";
+  // Derive WebSocket URL from API_BASE.
+  // If API_BASE is http://localhost:8081/api, wsUrl becomes http://localhost:8081/ws-chat
+  const wsUrl = API_BASE.replace(/\/api\/?$/, "") + "/ws-chat";
 
   const client = new Client({
     webSocketFactory: () => new SockJS(wsUrl) as unknown as WebSocket,
