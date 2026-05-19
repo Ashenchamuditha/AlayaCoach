@@ -4,13 +4,13 @@ export const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.MODE === "development"
     ? "http://localhost:8081/api"
-    : `${window.location.protocol}//${window.location.hostname}:8081/api`);
+    : "/api"); // Fallback to relative path if not defined, which is safer than guessing a host
 
 if (!import.meta.env.VITE_API_URL) {
   if (import.meta.env.PROD) {
     console.error(
-      "CRITICAL: VITE_API_URL is NOT defined! The app will likely fail to connect to the backend. " +
-      "Please set VITE_API_URL in your Vercel/deployment environment variables."
+      "CRITICAL: VITE_API_URL is NOT defined! The app is currently falling back to relative paths, which will likely fail since the backend is hosted on Railway.\n\n" +
+      "FIX: Please set VITE_API_URL in your Vercel Environment Variables to your Railway backend URL (e.g., https://your-app.up.railway.app/api)."
     );
   } else {
     console.warn("VITE_API_URL is NOT defined. Falling back to localhost for development.");
