@@ -60,7 +60,7 @@ public class FoodEntryService {
         return foodEntryRepository.save(entry);
     }
 
-    public FoodEntry logFoodWithImage(Long clientId, MultipartFile file) {
+    public FoodEntry logFoodWithImage(Long clientId, MultipartFile file, String manualName, String manualPortion) {
         String fileName = fileStorageService.storeFile(file);
         String imageUrl = "/uploads/food/" + fileName;
 
@@ -71,9 +71,11 @@ public class FoodEntryService {
             throw new RuntimeException("Could not read file for AI analysis", e);
         }
 
-        String aiJson = aiService.analyzeFoodImage(base64Image);
+        // Pass manual context to AI if available
+        String aiJson = aiService.analyzeFoodImage(base64Image, manualName, manualPortion);
         
-        String foodName = "Uploaded Food";
+        String foodName = (manualName != null && !manualName.trim().isEmpty()) ? manualName : "Uploaded Food";
+        String portion = (manualPortion != null && !manualPortion.trim().isEmpty()) ? manualPortion : null;
         Integer calories = 0;
         String advice = "Analysis failed. Please log manually.";
         String classification = "HEALTHY";
@@ -81,7 +83,12 @@ public class FoodEntryService {
 
         try {
             JsonNode node = objectMapper.readTree(aiJson);
-            foodName = node.get("foodName").asText();
+            
+            // AI detected name only if user didn't provide one
+            if (manualName == null || manualName.trim().isEmpty()) {
+                foodName = node.get("foodName").asText();
+            }
+            
             calories = node.get("calories").asInt();
             advice = node.get("feedback").asText();
             classification = node.get("classification").asText();
@@ -93,6 +100,7 @@ public class FoodEntryService {
         FoodEntry entry = FoodEntry.builder()
                 .clientId(clientId)
                 .foodName(foodName)
+                .portion(portion)
                 .calories(calories)
                 .aiFeedback(advice)
                 .classification(classification)

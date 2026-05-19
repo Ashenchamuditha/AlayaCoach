@@ -55,6 +55,19 @@ public class User implements UserDetails {
 
     private String primaryGoal; // e.g., "Weight Loss", "Muscle Gain", "Maintenance"
 
+    @Column(nullable = false, updatable = false)
+    @Builder.Default
+    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private java.time.LocalDateTime updatedAt = java.time.LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

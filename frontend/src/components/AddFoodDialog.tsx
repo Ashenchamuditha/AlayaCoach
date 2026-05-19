@@ -104,9 +104,12 @@ export function AddFoodDialog({ onAdd }: Props) {
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
+        if (form.foodName) formData.append("foodName", form.foodName);
+        if (form.portion) formData.append("portion", form.portion);
         response = await api.post("/food/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.info("AI is scanning your meal... This may take a few seconds.");
       } else {
         const parsed = schema.safeParse(form);
         if (!parsed.success) {
