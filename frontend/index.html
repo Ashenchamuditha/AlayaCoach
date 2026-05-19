@@ -16,6 +16,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   </head>
   <body>
+    <script>
+      // Fix "global is not defined" error for sockjs-client and other node-style libraries
+      if (typeof global === 'undefined') {
+        window.global = window;
+      }
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
