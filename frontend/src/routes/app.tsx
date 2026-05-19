@@ -383,12 +383,19 @@ function ClientDashboard() {
 
   const completedCount = (data.goals || []).filter((g) => g.done).length;
 
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+
   const toggle = async (id: string) => {
+    if (togglingIds.has(id)) return;
+    
     const goal = data.goals.find((g) => g.id === id);
     if (!goal) return;
     const nextStatus = !goal.done;
 
-    // Optimistic update
+    // 1. Lock the button
+    setTogglingIds((prev) => new Set(prev).add(id));
+
+    // 2. Optimistic update
     setData((d) => {
       if (!d) return null;
       return {
@@ -402,9 +409,10 @@ function ClientDashboard() {
     }
 
     try {
+      // 3. Send update
       const { data: updatedGoal } = await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
       
-      // Update with actual server data to be safe
+      // 4. Update with actual server data
       setData((d) => {
         if (!d) return null;
         return {
@@ -413,15 +421,25 @@ function ClientDashboard() {
         };
       });
       
+      // 5. Trigger a dashboard refresh for other stats
       fetchDashboard();
-    } catch {
+    } catch (err) {
+      console.error("Toggle failed:", err);
       toast.error("Failed to update status");
+      // Revert optimistic update
       setData((d) => {
         if (!d) return null;
         return {
           ...d,
           goals: d.goals.map((g) => (g.id === id ? { ...g, done: !nextStatus } : g)),
         };
+      });
+    } finally {
+      // 6. Unlock the button
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
       });
     }
   };
@@ -630,16 +648,18 @@ function ClientDashboard() {
                                 variant="outline"
                                 className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 text-amber-600 border-amber-200"
                                 onClick={() => toggle(g.id)}
+                                disabled={togglingIds.has(g.id)}
                               >
-                                Re-activate
+                                {togglingIds.has(g.id) ? "Wait..." : "Re-activate"}
                               </Button>
                             ) : (
                               <Button
                                 size="sm"
                                 className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => toggle(g.id)}
+                                disabled={togglingIds.has(g.id)}
                               >
-                                Complete
+                                {togglingIds.has(g.id) ? "Wait..." : "Complete"}
                               </Button>
                             )}
                             <Button
