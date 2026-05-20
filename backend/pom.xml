@@ -17,7 +17,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>Alaya Master Coach</name>
-    <!-- Cache buster: 2026-05-20-T15:52 -->
+    <!-- Cache buster: 2026-05-20-T19:00 -->
     <description>Accountability Coaching SaaS Backend</description>
 
     <properties>
