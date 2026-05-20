@@ -44,6 +44,7 @@ public class SecurityConfig {
                 // --- Public endpoints ---
                 .requestMatchers("/api/public/**").permitAll()
                 .requestMatchers("/api/auth/**").permitAll()
+                .requestMatchers("/api/tips/**").authenticated()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/uploads/**").permitAll()
                 // --- WebSocket handshake (STOMP upgrade) ---
