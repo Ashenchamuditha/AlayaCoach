@@ -33,33 +33,52 @@ public class DailyTipService {
 
     public List<DailyTip> getDailyTips(Long userId) {
         LocalDate today = LocalDate.now();
+        log.info("Fetching tips for user: {} on date: {}", userId, today);
         List<DailyTip> tips = dailyTipRepository.findAllByUserIdAndDate(userId, today);
-        
+
         if (tips.isEmpty()) {
-            tips = generateAndSaveTips(userId, today);
+            log.info("No tips found for user: {} today. Generating new ones...", userId);
+            try {
+                tips = generateAndSaveTips(userId, today);
+            } catch (Exception e) {
+                log.error("Failed to generate tips for user: {}. Error: {}", userId, e.getMessage());
+                return new ArrayList<>();
+            }
         }
-        
+
         return tips;
     }
 
     @Transactional
     public List<DailyTip> generateAndSaveTips(Long userId, LocalDate date) {
+        log.info("Generating tips for user: {} for date: {}", userId, date);
         // Gather context
         List<FoodEntry> foods = foodEntryRepository.findAllByClientIdOrderByEntryTimeDesc(userId).stream().limit(5).collect(Collectors.toList());
         List<Checkin> checkins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(userId);
         List<AIChat> chats = aiChatService.getUserHistory(userId).stream().sorted((a, b) -> b.getTimestamp().compareTo(a.getTimestamp())).limit(5).collect(Collectors.toList());
 
         StringBuilder context = new StringBuilder();
-        context.append("Recent Food Logs: ").append(foods.stream().map(f -> f.getFoodName() + "(" + f.getClassification() + ")").collect(Collectors.joining(", "))).append(". ");
-        context.append("Recent Checkins: ").append(checkins.stream().map(Checkin::getNote).collect(Collectors.joining(", "))).append(". ");
-        context.append("Recent AI Chats: ").append(chats.stream().filter(c -> "user".equals(c.getRole())).map(AIChat::getContent).collect(Collectors.joining(", "))).append(".");
+        if (!foods.isEmpty()) {
+            context.append("Recent Food Logs: ").append(foods.stream().map(f -> f.getFoodName() + "(" + f.getClassification() + ")").collect(Collectors.joining(", "))).append(". ");
+        }
+        if (!checkins.isEmpty()) {
+            context.append("Recent Checkins: ").append(checkins.stream().map(Checkin::getNote).collect(Collectors.joining(", "))).append(". ");
+        }
+        if (!chats.isEmpty()) {
+            context.append("Recent AI Chats: ").append(chats.stream().filter(c -> "user".equals(c.getRole())).map(AIChat::getContent).collect(Collectors.joining(", "))).append(".");
+        }
+
+        if (context.length() == 0) {
+            context.append("No recent activity data available for this user yet.");
+        }
 
         String json = aiService.generateDailyTips(context.toString());
         List<DailyTip> savedTips = new ArrayList<>();
 
         try {
+            log.debug("AI Response for tips: {}", json);
             List<String> tipStrings = objectMapper.readValue(json, new TypeReference<List<String>>() {});
-            
+
             // Delete old tips for today if any (safety)
             dailyTipRepository.deleteAllByUserIdAndDate(userId, date);
 
@@ -71,10 +90,12 @@ public class DailyTipService {
                         .build();
                 savedTips.add(dailyTipRepository.save(tip));
             }
+            log.info("Successfully saved {} tips for user: {}", savedTips.size(), userId);
         } catch (Exception e) {
-            log.error("Failed to parse daily tips JSON: {}", e.getMessage());
+            log.error("Failed to parse or save daily tips for user: {}. JSON: {}. Error: {}", userId, json, e.getMessage());
         }
 
         return savedTips;
     }
+
 }

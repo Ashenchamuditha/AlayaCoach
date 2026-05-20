@@ -16,10 +16,12 @@ public class DailyTip {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT", nullable = false)
     private String content;
 
+    @Column(name = "date", nullable = false)
     private LocalDate date;
 }
