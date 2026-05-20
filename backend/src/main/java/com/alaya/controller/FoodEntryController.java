@@ -42,8 +42,10 @@ public class FoodEntryController {
     @PostMapping("/upload")
     @PreAuthorize("hasRole('CLIENT')")
     public ResponseEntity<FoodEntry> logFoodWithImage(@RequestParam("file") MultipartFile file,
+                                                      @RequestParam(value = "foodName", required = false) String foodName,
+                                                      @RequestParam(value = "portion", required = false) String portion,
                                                       @AuthenticationPrincipal User client) {
-        return ResponseEntity.ok(foodEntryService.logFoodWithImage(client.getId(), file));
+        return ResponseEntity.ok(foodEntryService.logFoodWithImage(client.getId(), file, foodName, portion));
     }
 
     @GetMapping

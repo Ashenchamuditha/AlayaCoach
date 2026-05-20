@@ -41,9 +41,46 @@ export function AddFoodDialog({ onAdd }: Props) {
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0];
     if (f) {
-      setFile(f);
+      // Compress image before setting it
       const reader = new FileReader();
-      reader.onloadend = () => setPreview(reader.result as string);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], f.name, {
+                type: "image/jpeg",
+                lastModified: Date.now(),
+              });
+              setFile(compressedFile);
+              setPreview(canvas.toDataURL("image/jpeg", 0.7));
+            }
+          }, "image/jpeg", 0.7);
+        };
+        img.src = event.target?.result as string;
+      };
       reader.readAsDataURL(f);
     }
   };
@@ -67,9 +104,12 @@ export function AddFoodDialog({ onAdd }: Props) {
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
+        if (form.foodName) formData.append("foodName", form.foodName);
+        if (form.portion) formData.append("portion", form.portion);
         response = await api.post("/food/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
+        toast.info("AI is scanning your meal... This may take a few seconds.");
       } else {
         const parsed = schema.safeParse(form);
         if (!parsed.success) {

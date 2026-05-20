@@ -63,30 +63,30 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border/50 bg-white/90 backdrop-blur-xl dark:bg-[#0a0a0b]/90">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-3 md:px-4">
         {/* Left Section: Logo & Mobile Dropdown */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1 md:gap-1.5">
           <button 
             onClick={() => handleNavClick("overview")}
             className="flex items-center gap-2 shrink-0 transition-transform active:scale-95"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-brand shadow-glow">
-              <Sparkles className="h-5 w-5 text-white" />
+            <div className="flex h-8 w-8 md:h-9 md:w-9 items-center justify-center rounded-lg md:rounded-xl bg-gradient-brand shadow-glow">
+              <Sparkles className="h-4 w-4 md:h-5 md:w-5 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight hidden md:inline">
+            <span className="text-base md:text-lg font-bold tracking-tight hidden sm:inline">
               Alaya<span className="hidden lg:inline"> Master Coach</span>
             </span>
           </button>
 
           {/* Mobile Dropdown Menu on Left */}
           {user && user.role !== "COACH" && path === "/app" && (
-            <div className="md:hidden flex items-center gap-0.5">
+            <div className="md:hidden flex items-center gap-0.5 ml-1">
               <div className="h-4 w-px bg-border/60 mx-1" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-9 gap-1.5 px-2 text-muted-foreground hover:text-foreground">
-                    <span className="text-xs font-bold uppercase tracking-wider">My Guide</span>
-                    <ChevronDown className="h-3.5 w-3.5 opacity-50" />
+                  <Button variant="ghost" size="sm" className="h-8 gap-1 px-1.5 text-muted-foreground hover:text-foreground">
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Guide</span>
+                    <ChevronDown className="h-3 w-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="start" className="w-56 mt-2 dark:bg-[#0a0a0b] border-border/50">

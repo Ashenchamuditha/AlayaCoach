@@ -24,7 +24,7 @@ export function createChatClient(
   onMessage: (m: ChatMessage) => void,
   onUpdate?: (u: GenericUpdate) => void,
 ) {
-  // Derive WebSocket URL from API_BASE. 
+  // Derive WebSocket URL from API_BASE.
   // If API_BASE is http://localhost:8081/api, wsUrl becomes http://localhost:8081/ws-chat
   const wsUrl = API_BASE.replace(/\/api\/?$/, "") + "/ws-chat";
 

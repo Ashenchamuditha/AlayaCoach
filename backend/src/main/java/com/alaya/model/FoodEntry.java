@@ -37,6 +37,10 @@ public class FoodEntry {
     @Column(columnDefinition = "TEXT")
     private String aiFeedback;
 
+    private String classification; // HEALTHY or UNHEALTHY
+
+    private String chatStarter; // Suggested question for chat
+
     @Column(columnDefinition = "TEXT")
     private String coachFeedback;
 

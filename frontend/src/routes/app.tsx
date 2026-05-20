@@ -56,11 +56,13 @@ import { toast } from "sonner";
 import { api, getMediaUrl } from "@/lib/api";
 import { createChatClient } from "@/lib/ws";
 import { useAuth } from "@/store/auth";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/app")({
   validateSearch: (search: Record<string, unknown>) => {
     return {
       tab: (search.tab as string) || "overview",
+      prompt: (search.prompt as string) || "",
     };
   },
   head: () => ({
@@ -98,6 +100,8 @@ interface FoodEntry {
   entryTime: string;
   updatedAt?: string;
   aiFeedback?: string;
+  classification?: string;
+  chatStarter?: string;
   coachFeedback?: string;
   imageUrl?: string;
 }
@@ -244,15 +248,23 @@ function GoalPreviewDialog({
   );
 }
 
+interface DailyTip {
+  id: number;
+  content: string;
+}
+
 function ClientDashboard() {
   const { user, hydrate, token } = useAuth();
   const navigate = useNavigate();
-  const { tab: activeTab } = Route.useSearch();
+  const { tab: activeTab, prompt } = Route.useSearch();
   const [data, setData] = useState<DashboardData | null>(null);
   const [foodEntries, setFoodEntries] = useState<FoodEntry[]>([]);
+  const [dailyTips, setDailyTips] = useState<DailyTip[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [previewGoal, setPreviewGoal] = useState<Goal | null>(null);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  const [isRefreshingTips, setIsRefreshingTips] = useState(false);
+  const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
   const fetchDashboard = () => {
     api
@@ -271,6 +283,26 @@ function ClientDashboard() {
       .catch((err) => console.error("Food entries fetch failed:", err));
   };
 
+  const fetchDailyTips = () => {
+    api
+      .get<DailyTip[]>("/tips/daily")
+      .then((r) => setDailyTips(r.data))
+      .catch((err) => console.error("Daily tips fetch failed:", err));
+  };
+
+  const refreshTips = async () => {
+    setIsRefreshingTips(true);
+    try {
+      const { data } = await api.post<DailyTip[]>("/tips/refresh");
+      setDailyTips(data);
+      toast.success("AI generated new tips for you!");
+    } catch (err) {
+      toast.error("Failed to refresh tips");
+    } finally {
+      setIsRefreshingTips(false);
+    }
+  };
+
   useEffect(() => {
     hydrate();
   }, [hydrate]);
@@ -285,6 +317,7 @@ function ClientDashboard() {
   useEffect(() => {
     fetchDashboard();
     fetchFoodEntries();
+    fetchDailyTips();
   }, []);
 
   useEffect(() => {
@@ -297,8 +330,10 @@ function ClientDashboard() {
       (update) => {
         if (
           update.type === "GOAL_UPDATE" ||
+          update.type === "GOAL_UPDATED" ||
           update.type === "GOAL_DELETED" ||
-          update.type === "FOOD_FEEDBACK"
+          update.type === "FOOD_FEEDBACK" ||
+          update.type === "NEW_NOTIFICATION"
         ) {
           fetchDashboard();
           if (update.type === "FOOD_FEEDBACK") {
@@ -350,11 +385,16 @@ function ClientDashboard() {
   const completedCount = (data.goals || []).filter((g) => g.done).length;
 
   const toggle = async (id: string) => {
+    if (togglingIds.has(id)) return;
+    
     const goal = data.goals.find((g) => g.id === id);
     if (!goal) return;
     const nextStatus = !goal.done;
 
-    // Optimistic update
+    // 1. Lock the button
+    setTogglingIds((prev) => new Set(prev).add(id));
+
+    // 2. Optimistic update
     setData((d) => {
       if (!d) return null;
       return {
@@ -368,17 +408,37 @@ function ClientDashboard() {
     }
 
     try {
-      await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
-      await api.post("/checkins", { goalId: id, completed: nextStatus });
+      // 3. Send update
+      const { data: updatedGoal } = await api.patch(`/goals/${id}/toggle?completed=${nextStatus}`);
+      
+      // 4. Update with actual server data
+      setData((d) => {
+        if (!d) return null;
+        return {
+          ...d,
+          goals: d.goals.map((g) => (g.id === id ? { ...g, done: updatedGoal.status === "COMPLETED" } : g)),
+        };
+      });
+      
+      // 5. Trigger a dashboard refresh for other stats
       fetchDashboard();
-    } catch {
+    } catch (err) {
+      console.error("Toggle failed:", err);
       toast.error("Failed to update status");
+      // Revert optimistic update
       setData((d) => {
         if (!d) return null;
         return {
           ...d,
           goals: d.goals.map((g) => (g.id === id ? { ...g, done: !nextStatus } : g)),
         };
+      });
+    } finally {
+      // 6. Unlock the button
+      setTogglingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        return next;
       });
     }
   };
@@ -439,41 +499,41 @@ function ClientDashboard() {
           {/* Greeting Card - Only show on Overview and Nutrition */}
           {(activeTab === "overview" || activeTab === "nutrition") && (
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <Card className="relative overflow-hidden bg-gradient-brand p-6 md:p-8 text-white shadow-glow border-none">
-                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <Card className="relative overflow-hidden bg-gradient-brand p-5 md:p-8 text-white shadow-glow border-none">
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
                   <div>
-                    <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Hi, {user.name.split(" ")[0]}!</h1>
-                    <p className="mt-1 md:mt-2 text-white/80 max-w-md text-sm md:text-base">
+                    <h1 className="text-xl md:text-3xl font-bold tracking-tight">Hi, {user.name.split(" ")[0]}!</h1>
+                    <p className="mt-1 md:mt-2 text-white/80 max-w-md text-xs md:text-base">
                       You've completed {completedCount} goals today. Keep up the momentum!
                     </p>
                   </div>
-                  <div className="flex gap-3 md:gap-4">
-                    <div className="rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md p-3 md:p-4 text-center min-w-[70px] md:min-w-[96px]">
-                      <p className="text-xl md:text-3xl font-bold">{completedCount}</p>
-                      <p className="text-[8px] md:text-[10px] uppercase font-bold text-white/60">Done</p>
+                  <div className="flex gap-2 md:gap-4">
+                    <div className="flex-1 md:flex-none rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md p-2.5 md:p-4 text-center min-w-[64px] md:min-w-[96px]">
+                      <p className="text-lg md:text-3xl font-bold">{completedCount}</p>
+                      <p className="text-[7px] md:text-[10px] uppercase font-bold text-white/60">Done</p>
                     </div>
-                    <div className="rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md p-3 md:p-4 text-center min-w-[70px] md:min-w-[96px]">
-                      <p className="text-xl md:text-3xl font-bold">{(data.goals || []).length}</p>
-                      <p className="text-[8px] md:text-[10px] uppercase font-bold text-white/60">Total</p>
+                    <div className="flex-1 md:flex-none rounded-xl md:rounded-2xl bg-white/10 backdrop-blur-md p-2.5 md:p-4 text-center min-w-[64px] md:min-w-[96px]">
+                      <p className="text-lg md:text-3xl font-bold">{(data.goals || []).length}</p>
+                      <p className="text-[7px] md:text-[10px] uppercase font-bold text-white/60">Total</p>
                     </div>
                   </div>
                 </div>
-                <Sparkles className="absolute -bottom-6 -right-6 h-24 w-24 md:h-32 md:w-32 text-white/10" />
+                <Sparkles className="absolute -bottom-6 -right-6 h-20 w-20 md:h-32 md:w-32 text-white/10" />
               </Card>
             </motion.div>
           )}
 
           {activeTab === "overview" && (
             <div className="space-y-6">
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="p-4 md:p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-brand text-white">
-                      <Clock className="h-4 w-4 md:h-5 md:w-5" />
+              <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+                <Card className="p-3 md:p-6">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
+                      <Clock className="h-3.5 w-3.5 md:h-5 md:w-5" />
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Recent</p>
-                      <p className="text-xs md:text-sm font-bold truncate">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[8px] md:text-xs text-muted-foreground uppercase font-bold">Recent</p>
+                      <p className="text-[10px] md:text-sm font-bold truncate">
                         {data.recentCheckins && data.recentCheckins.length > 0
                           ? data.recentCheckins[0].note
                           : "No actions yet"}
@@ -481,52 +541,52 @@ function ClientDashboard() {
                     </div>
                   </div>
                 </Card>
-                <Card className="p-4 md:p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-brand text-white">
-                      <Target className="h-4 w-4 md:h-5 md:w-5" />
+                <Card className="p-3 md:p-6">
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
+                      <Target className="h-3.5 w-3.5 md:h-5 md:w-5" />
                     </div>
                     <div>
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
-                      <p className="text-xl md:text-2xl font-bold">
+                      <p className="text-[8px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
+                      <p className="text-lg md:text-2xl font-bold leading-none">
                         {completedCount}/{(data.goals || []).length}
                       </p>
                     </div>
                   </div>
                 </Card>
                 <Card
-                  className="p-4 md:p-6 cursor-pointer hover:border-primary/50 transition-all"
+                  className="p-3 md:p-6 cursor-pointer hover:border-primary/50 transition-all"
                   onClick={() => navigate({ to: "/app", search: { tab: "nutrition" } })}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
-                      <Flame className="h-4 w-4 md:h-5 md:w-5" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-orange-100 text-orange-600">
+                      <Flame className="h-3.5 w-3.5 md:h-5 md:w-5" />
                     </div>
-                    <div className="flex-1">
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Calories</p>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[8px] md:text-xs text-muted-foreground uppercase font-bold">Calories</p>
                       <div className="flex items-center justify-between">
-                        <p className="text-xl md:text-2xl font-bold">
+                        <p className="text-lg md:text-2xl font-bold leading-none">
                           {todayCalories}
-                          <span className="ml-1 text-[10px] md:text-sm font-normal text-muted-foreground">kcal</span>
+                          <span className="ml-0.5 text-[8px] md:text-sm font-normal text-muted-foreground">kcal</span>
                         </p>
-                        <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
                       </div>
                     </div>
                   </div>
                 </Card>
-                <Card className="relative p-4 md:p-6">
+                <Card className="relative p-3 md:p-6">
                   {!!data.unreadCount && data.unreadCount > 0 && (
-                    <div className="absolute -right-2 -top-2 flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[8px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
+                    <div className="absolute -right-1.5 -top-1.5 flex h-4 w-4 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[7px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
                       {data.unreadCount > 9 ? "9+" : data.unreadCount}
                     </div>
                   )}
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-9 w-9 md:h-10 md:w-10 items-center justify-center rounded-lg bg-gradient-brand text-white">
-                      <Sparkles className="h-4 w-4 md:h-5 md:w-5" />
+                  <div className="flex items-center gap-2 md:gap-3">
+                    <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
+                      <Sparkles className="h-3.5 w-3.5 md:h-5 md:w-5" />
                     </div>
-                    <div className="flex-1 overflow-hidden">
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Coach</p>
-                      <p className="text-xs md:text-sm font-medium line-clamp-1">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[8px] md:text-xs text-muted-foreground uppercase font-bold">Coach</p>
+                      <p className="text-[10px] md:text-sm font-medium line-clamp-1">
                         {data.lastMessage || "No messages yet"}
                       </p>
                     </div>
@@ -553,7 +613,7 @@ function ClientDashboard() {
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
-                          className="flex items-center gap-3 rounded-lg border border-border p-3 transition hover:bg-muted/50"
+                          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border p-3 transition hover:bg-muted/50"
                         >
                           <div className="flex-1 min-w-0">
                             <p
@@ -562,25 +622,19 @@ function ClientDashboard() {
                               {g.title}
                             </p>
                             <div className="flex flex-wrap gap-1.5 mt-1">
-                              <Badge variant="outline" className="text-[8px] h-3.5 py-0 px-1.5">
+                              <Badge variant="outline" className="text-[8px] h-3.5 py-0 px-1.5 shrink-0">
                                 {g.category}
                               </Badge>
                               <Badge
                                 variant={g.priority === "high" ? "destructive" : "secondary"}
-                                className="text-[8px] h-3.5 py-0 px-1.5"
+                                className="text-[8px] h-3.5 py-0 px-1.5 shrink-0"
                               >
                                 {g.priority}
                               </Badge>
                               {g.createdAt && (
-                                <span className="text-[8px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1">
+                                <span className="text-[8px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1 shrink-0">
                                   <Clock className="h-2.5 w-2.5" />
-                                  Added {new Date(g.createdAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
-                                </span>
-                              )}
-                              {g.updatedAt && g.updatedAt !== g.createdAt && (
-                                <span className="text-[8px] text-muted-foreground bg-primary/5 px-1.5 rounded flex items-center gap-1">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  Updated {new Date(g.updatedAt).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+                                  {new Date(g.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
                               )}
                             </div>
@@ -591,18 +645,20 @@ function ClientDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2 text-amber-600 border-amber-200"
+                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 text-amber-600 border-amber-200"
                                 onClick={() => toggle(g.id)}
+                                disabled={togglingIds.has(g.id)}
                               >
-                                Active
+                                {togglingIds.has(g.id) ? "Wait..." : "Re-activate"}
                               </Button>
                             ) : (
                               <Button
                                 size="sm"
-                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2 bg-green-600 hover:bg-green-700 text-white"
+                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => toggle(g.id)}
+                                disabled={togglingIds.has(g.id)}
                               >
-                                Done
+                                {togglingIds.has(g.id) ? "Wait..." : "Complete"}
                               </Button>
                             )}
                             <Button
@@ -662,25 +718,25 @@ function ClientDashboard() {
 
           {activeTab === "nutrition" && (
             <div className="space-y-4 md:space-y-6">
-              <div className="grid gap-4 md:grid-cols-3">
-                <Card className="p-4 md:p-6 bg-gradient-soft">
+              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
+                <Card className="p-4 md:p-6 bg-gradient-soft border-primary/10">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shadow-sm">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shadow-sm shrink-0">
                       <Flame className="h-5 w-5" />
                     </div>
                     <div>
                       <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Total Intake</p>
                       <p className="text-xl md:text-2xl font-bold">
                         {todayCalories}
-                        <span className="ml-1 text-[10px] md:text-sm font-normal text-muted-foreground">kcal</span>
+                        <span className="ml-1 text-xs md:text-sm font-normal text-muted-foreground uppercase">kcal</span>
                       </p>
                     </div>
                   </div>
                 </Card>
-                <Card className="p-4 md:p-6 md:col-span-2">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h2 className="text-lg font-semibold">Food Log</h2>
+                <Card className="p-4 md:p-6 sm:col-span-2">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0">
+                      <h2 className="text-lg font-semibold truncate">Food Log</h2>
                       <p className="text-xs text-muted-foreground hidden sm:block">Track your meals for AI insights.</p>
                     </div>
                     <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
@@ -696,7 +752,7 @@ function ClientDashboard() {
                         key={entry.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-xl border border-border/50 bg-card p-3 md:p-4 shadow-sm"
+                        className="rounded-xl border border-border/50 bg-card p-3 md:p-4 shadow-sm hover:border-primary/20 transition-colors"
                       >
                         <div className="flex gap-3 md:gap-4">
                           {entry.imageUrl && (
@@ -706,26 +762,48 @@ function ClientDashboard() {
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
-                              <h3 className="font-bold text-sm md:text-base truncate">{entry.foodName}</h3>
-                              <Badge variant="outline" className="text-[8px] md:text-[9px] shrink-0">
+                              <div className="flex flex-col gap-1">
+                                <h3 className="font-bold text-sm md:text-base truncate">{entry.foodName}</h3>
+                                {entry.classification && (
+                                  <Badge 
+                                    className={cn(
+                                      "w-fit text-[8px] h-3.5 px-1.5",
+                                      entry.classification === "HEALTHY" 
+                                        ? "bg-green-100 text-green-700 hover:bg-green-100" 
+                                        : "bg-red-100 text-red-700 hover:bg-red-100"
+                                    )}
+                                  >
+                                    {entry.classification === "HEALTHY" ? "Healthy choice" : "Harmful if frequent"}
+                                  </Badge>
+                                )}
+                              </div>
+                              <Badge variant="outline" className="text-[8px] md:text-[9px] shrink-0 font-bold">
                                 {entry.entryTime ? new Date(entry.entryTime).toLocaleDateString([], { month: "short", day: "numeric" }) : "Today"}
                               </Badge>
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-2 text-[10px] md:text-xs text-muted-foreground font-medium">
+                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[9px] md:text-xs text-muted-foreground font-medium">
                               <span className="flex items-center gap-1"><Utensils className="h-3 w-3" /> {entry.portion || "Normal"}</span>
-                              <span className="flex items-center gap-1 text-orange-600"><Flame className="h-3 w-3" /> {entry.calories || 0} kcal</span>
-                              <span className="flex items-center gap-1 bg-muted/30 px-1.5 rounded">
-                                <Clock className="h-3 w-3" /> Added at {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A"}
+                              <span className="flex items-center gap-1 text-orange-600 font-bold"><Flame className="h-3 w-3" /> {entry.calories || 0} kcal</span>
+                              <span className="flex items-center gap-1 bg-muted/30 px-1.5 py-0.5 rounded">
+                                <Clock className="h-3 w-3" /> {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A"}
                               </span>
-                              {entry.updatedAt && entry.updatedAt !== entry.entryTime && (
-                                <span className="flex items-center gap-1 bg-primary/5 px-1.5 rounded">
-                                  <Clock className="h-3 w-3" /> Updated at {new Date(entry.updatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                </span>
-                              )}
                             </div>
                             {entry.aiFeedback && (
-                              <div className="mt-2.5 rounded-lg bg-primary/5 p-2 md:p-3 border border-primary/10 italic text-[11px] md:text-sm text-foreground/80">
+                              <div className="mt-2.5 rounded-lg bg-primary/5 p-2 md:p-3 border border-primary/10 italic text-[10px] md:text-sm text-foreground/80 leading-relaxed">
                                 "{entry.aiFeedback}"
+                                {entry.chatStarter && (
+                                  <div className="mt-2 flex justify-end">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-6 text-[10px] text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1"
+                                      onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
+                                    >
+                                      Ask AI: {entry.chatStarter}
+                                      <ChevronRight className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             )}
                           </div>
@@ -735,22 +813,37 @@ function ClientDashboard() {
                   </AnimatePresence>
                   {(!foodEntries || foodEntries.length === 0) && (
                     <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-2xl border border-dashed">
-                      <Utensils className="h-8 w-8 text-muted-foreground mb-3" />
+                      <Utensils className="h-8 w-8 text-muted-foreground mb-3 opacity-20" />
                       <p className="text-xs font-medium text-muted-foreground">Start logging your meals</p>
                     </div>
                   )}
                 </div>
-                <Card className="p-4 md:p-6 h-fit bg-muted/30 border-none shadow-none">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-muted-foreground mb-4">Tips</h3>
-                  <ul className="space-y-3 text-xs md:text-sm font-medium">
-                    <li className="flex items-start gap-2.5">
-                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      Drink at least 8 glasses of water.
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      Prioritize protein in every meal.
-                    </li>
+                <Card className="p-4 md:p-6 h-fit bg-muted/30 border-none shadow-none hidden lg:block">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className={cn("h-6 w-6 text-muted-foreground", isRefreshingTips && "animate-spin")}
+                      onClick={refreshTips}
+                      disabled={isRefreshingTips}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <ul className="space-y-3 text-sm font-medium">
+                    {dailyTips.length > 0 ? (
+                      dailyTips.map((tip) => (
+                        <li key={tip.id} className="flex items-start gap-2.5">
+                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                          <span>{tip.content}</span>
+                        </li>
+                      ))
+                    ) : (
+                      <div className="py-4 text-center">
+                        <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                      </div>
+                    )}
                   </ul>
                 </Card>
               </div>
@@ -759,7 +852,7 @@ function ClientDashboard() {
 
           {activeTab === "ai" && (
             <div className="-mx-4 flex-1 h-[calc(100dvh-130px)] md:mx-0 md:h-[600px]">
-              <AIAssistant />
+              <AIAssistant initialPrompt={prompt} />
             </div>
           )}
 

@@ -45,11 +45,11 @@ const schema = z.object({
   clientId: z.string().optional(),
   category: z.string().trim().min(1, "Category is required"),
   priority: z.enum(["low", "medium", "high"]),
-  dueDate: z.string().min(1, "Due date is required"),
-  endDate: z.string().min(1, "End date is required"),
-  startTime: z.string().min(1, "Start time is required"),
-  endTime: z.string().min(1, "End time is required"),
-  durationMinutes: z.coerce.number().int().min(1, "Min 1 minute").max(1440),
+  dueDate: z.string().optional(),
+  endDate: z.string().optional(),
+  startTime: z.string().optional(),
+  endTime: z.string().optional(),
+  durationMinutes: z.coerce.number().int().min(1, "Min 1 minute").max(1440).optional(),
   targetValue: z.coerce.number().optional(),
   targetUnit: z.string().optional(),
 });
@@ -67,12 +67,12 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     title: "",
     description: "",
     clientId: clientId,
-    category: "Wellness",
+    category: "",
     priority: "medium",
-    dueDate: "", // Empty to force manual selection or at least force validation
+    dueDate: "",
     endDate: "",
-    startTime: "09:00",
-    endTime: "10:00",
+    startTime: "",
+    endTime: "",
     durationMinutes: 60,
     targetValue: 0,
     targetUnit: "",
@@ -81,14 +81,13 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
   const updateTime = (field: "startTime" | "endTime", value: string) => {
     const newForm = { ...form, [field]: value };
     
-    // Recalculate duration
     if (newForm.startTime && newForm.endTime) {
       const [sh, sm] = newForm.startTime.split(":").map(Number);
       const [eh, em] = newForm.endTime.split(":").map(Number);
       const start = sh * 60 + sm;
       let end = eh * 60 + em;
       
-      if (end < start) end += 24 * 60; // handle overnight
+      if (end < start) end += 24 * 60;
       newForm.durationMinutes = end - start;
     }
     
@@ -100,12 +99,12 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
       title: "",
       description: "",
       clientId: clientId,
-      category: "Wellness",
+      category: "",
       priority: "medium",
       dueDate: "",
       endDate: "",
-      startTime: "09:00",
-      endTime: "10:00",
+      startTime: "",
+      endTime: "",
       durationMinutes: 60,
       targetValue: 0,
       targetUnit: "",
@@ -116,13 +115,9 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Explicit check for required fields including Due Date
     const fieldErrors: Record<string, string> = {};
     if (!form.title || form.title.trim().length < 3) fieldErrors.title = "Title must be at least 3 chars";
     if (!form.category) fieldErrors.category = "Category is required";
-    if (!form.dueDate) fieldErrors.dueDate = "Due date is required";
-    if (!form.startTime) fieldErrors.startTime = "Start time is required";
-    if (!form.endTime) fieldErrors.endTime = "End time is required";
 
     if (Object.keys(fieldErrors).length > 0) {
       setErrors(fieldErrors);
@@ -137,7 +132,6 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
       
       toast.success("Successfully goal is added");
       
-      // Call parent update then close and reset
       onAdd({
         ...payload,
         id: String(data.id),
@@ -194,22 +188,14 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>Category *</Label>
-              <Select
+              <Label htmlFor="category">Category *</Label>
+              <Input
+                id="category"
                 value={form.category}
-                onValueChange={(v) => setForm({ ...form, category: v })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Wellness">Wellness</SelectItem>
-                  <SelectItem value="Fitness">Fitness</SelectItem>
-                  <SelectItem value="Work">Work</SelectItem>
-                  <SelectItem value="Learning">Learning</SelectItem>
-                  <SelectItem value="Mindset">Mindset</SelectItem>
-                </SelectContent>
-              </Select>
+                onChange={(e) => setForm({ ...form, category: e.target.value })}
+                placeholder="e.g. Wellness, Fitness"
+              />
+              {errors.category && <p className="text-xs text-destructive">{errors.category}</p>}
             </div>
             <div className="space-y-1.5">
               <Label>Priority *</Label>
@@ -230,7 +216,7 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="startTime">Start time *</Label>
+              <Label htmlFor="startTime">Start time</Label>
               <Input
                 id="startTime"
                 type="time"
@@ -240,7 +226,7 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
               {errors.startTime && <p className="text-xs text-destructive">{errors.startTime}</p>}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="endTime">End time *</Label>
+              <Label htmlFor="endTime">End time</Label>
               <Input
                 id="endTime"
                 type="time"
@@ -252,7 +238,7 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label htmlFor="dueDate">Due date *</Label>
+              <Label htmlFor="dueDate">Due date</Label>
               <Input
                 id="dueDate"
                 type="date"

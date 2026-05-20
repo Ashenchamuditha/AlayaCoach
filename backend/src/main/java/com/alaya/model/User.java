@@ -8,11 +8,12 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "users", indexes = {
     @Index(name = "idx_user_email", columnList = "email", unique = true),
-    @Index(name = "idx_user_coach_id", columnList = "coachId")
+    @Index(name = "idx_user_coach_id", columnList = "coach_id")
 })
 @Getter @Setter @NoArgsConstructor @AllArgsConstructor @Builder
 public class User implements UserDetails {
@@ -36,6 +37,36 @@ public class User implements UserDetails {
 
     // For CLIENT: references their assigned COACH's id. Null for COACHes.
     private Long coachId;
+
+    @Builder.Default
+    private boolean emailVerified = false;
+
+    // Biometrics and Profile
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
+
+    private LocalDate birthDate;
+    private Double currentWeight;
+    private Double targetWeight;
+    private Double heightCm;
+
+    @Enumerated(EnumType.STRING)
+    private ActivityLevel activityLevel;
+
+    private String primaryGoal; // e.g., "Weight Loss", "Muscle Gain", "Maintenance"
+
+    @Column(nullable = false, updatable = false)
+    @Builder.Default
+    private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private java.time.LocalDateTime updatedAt = java.time.LocalDateTime.now();
+
+    @PreUpdate
+    protected void onUpdate() {
+        updatedAt = java.time.LocalDateTime.now();
+    }
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -341,7 +341,12 @@ function CoachDashboard() {
         fetchClients();
       },
       (update) => {
-        if (update.type === "GOAL_UPDATE" || update.type === "GOAL_DELETED") {
+        if (
+          update.type === "GOAL_UPDATE" ||
+          update.type === "GOAL_UPDATED" ||
+          update.type === "GOAL_DELETED" ||
+          update.type === "NEW_NOTIFICATION"
+        ) {
           fetchClients();
           if (selected && String(selected.id) === String(update.clientId)) {
             api.get<Goal[]>(`/goals/client/${selected.id}`).then((r) => {
@@ -486,21 +491,21 @@ function CoachDashboard() {
         {!selected && (
           <>
             <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-              <h1 className="text-3xl font-bold tracking-tight">
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
                 Welcome,{" "}
                 <span className="text-gradient-brand">
                   Coach {(user.name || "User").split(" ")[0]}
                 </span>
               </h1>
-              <p className="mt-1 text-muted-foreground">{clients.length} active clients today.</p>
+              <p className="mt-1 text-sm md:text-base text-muted-foreground">{clients.length} active clients today.</p>
             </motion.div>
 
-            <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="mt-6 grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {clients.length === 0 ? (
-                <Card className="col-span-full p-12 text-center">
-                  <Users className="mx-auto h-12 w-12 text-muted-foreground opacity-20" />
+                <Card className="col-span-full p-8 md:p-12 text-center">
+                  <Users className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground opacity-20" />
                   <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
-                  <p className="text-muted-foreground">
+                  <p className="text-sm text-muted-foreground">
                     New clients who register will be automatically assigned to you.
                   </p>
                 </Card>
@@ -514,43 +519,43 @@ function CoachDashboard() {
                   >
                     <Card
                       onClick={() => setSelected(c)}
-                      className="group relative cursor-pointer p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
+                      className="group relative cursor-pointer p-5 md:p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
                     >
                       {!!c.unreadCount && c.unreadCount > 0 && (
-                        <div className="absolute right-4 top-4 flex h-6 w-6 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-white shadow-lg animate-pulse">
+                        <div className="absolute right-3 top-3 md:right-4 md:top-4 flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[8px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
                           {c.unreadCount > 9 ? "9+" : c.unreadCount}
                         </div>
                       )}
                       <div className="flex items-center gap-3">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gradient-brand text-sm font-semibold text-white">
+                        <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-gradient-brand text-xs md:text-sm font-semibold text-white shrink-0">
                           {(c.name || "U")
                             .split(" ")
                             .map((n) => n[0])
                             .join("")}
                         </div>
-                        <div>
-                          <p className="font-semibold">{c.name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Last active {c.lastActive}
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm md:text-base truncate">{c.name}</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground truncate">
+                            Active {c.lastActive}
                           </p>
                         </div>
                       </div>
                       <div className="mt-4">
-                        <p className="text-xs font-medium text-muted-foreground flex items-center gap-1">
-                          <MessageCircle className="h-3 w-3" /> Recent Message
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase flex items-center gap-1">
+                          <MessageCircle className="h-2.5 w-2.5" /> Recent Message
                         </p>
-                        <p className="text-sm line-clamp-1 mt-0.5 text-muted-foreground">
-                          {c.lastMessage || "No messages yet"}
+                        <p className="text-xs md:text-sm line-clamp-1 mt-0.5 text-muted-foreground italic">
+                          "{c.lastMessage || "No messages yet"}"
                         </p>
                       </div>
-                      <div className="mt-5 grid grid-cols-2 gap-4">
+                      <div className="mt-4 md:mt-5 grid grid-cols-2 gap-4 border-t pt-4">
                         <div>
-                          <p className="text-xs text-muted-foreground">Active Goals</p>
-                          <p className="text-xl font-bold">{c.activeGoals}</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
+                          <p className="text-lg md:text-xl font-bold">{c.activeGoals}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground">Completion</p>
-                          <p className="text-xl font-bold text-gradient-brand">{c.completion}%</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Completion</p>
+                          <p className="text-lg md:text-xl font-bold text-gradient-brand">{c.completion}%</p>
                         </div>
                       </div>
                     </Card>
@@ -580,61 +585,57 @@ function CoachDashboard() {
             {!chatting ? (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-full bg-gradient-brand text-white">
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-brand text-white shrink-0 text-lg md:text-xl font-bold shadow-glow">
                       {(selected.name || "U")
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
                     </div>
-                    <div>
-                      <h1 className="text-2xl font-bold">{selected.name}</h1>
-                      <p className="text-sm text-muted-foreground">
-                        Last active {selected.lastActive}
+                    <div className="min-w-0">
+                      <h1 className="text-xl md:text-2xl font-bold truncate">{selected.name}</h1>
+                      <p className="text-xs md:text-sm text-muted-foreground truncate">
+                        Active {selected.lastActive}
                       </p>
                     </div>
                   </div>
                   <Button
                     onClick={() => setChatting(true)}
-                    className="bg-gradient-brand text-white hover:opacity-90"
+                    className="w-full sm:w-auto bg-gradient-brand text-white hover:opacity-90"
                   >
-                    <MessageCircle className="mr-2 h-4 w-4" /> New Chat
+                    <MessageCircle className="mr-2 h-4 w-4" /> Message Client
                   </Button>
                 </div>
 
-                <div className="mt-6 grid gap-6 md:grid-cols-3">
-                  <Card className="p-6">
-                    <TrendingUp className="mb-2 h-5 w-5 text-primary" />
-                    <p className="text-xs text-muted-foreground">Completion rate</p>
-                    <p className="text-2xl font-bold">{selected.completion}%</p>
-                  </Card>
-                  <Card className="p-6">
-                    <div className="flex items-center gap-2 mb-2">
-                      <CheckCircle2 className="h-5 w-5 text-primary" />
-                      <p className="text-xs text-muted-foreground">Active Goals</p>
+                <div className="mt-6 grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-3">
+                  <Card className="p-4 md:p-6">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Progress</p>
                     </div>
-                    <p className="text-2xl font-bold">{selected.activeGoals}</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {selectedGoals?.length || 0} total goals assigned
-                    </p>
+                    <p className="text-xl md:text-2xl font-bold">{selected.completion}%</p>
                   </Card>
-                  <Card className="p-6 bg-gradient-soft border-primary/20">
-                    <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
+                  <Card className="p-4 md:p-6">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
+                    </div>
+                    <p className="text-xl md:text-2xl font-bold">{selected.activeGoals}</p>
+                  </Card>
+                  <Card className="p-4 md:p-6 bg-gradient-soft border-primary/20 col-span-2 md:col-span-1">
+                    <p className="text-[10px] md:text-xs text-muted-foreground font-bold uppercase tracking-wider mb-1.5">
                       Weekly activity
                     </p>
-                    <div className="mt-2 flex items-baseline gap-2">
-                      <p className="text-2xl font-bold">Real-time</p>
-                      <span className="text-xs text-primary font-medium">Tracking enabled</span>
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-lg md:text-2xl font-bold leading-none">Tracking</p>
+                      <span className="text-[10px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded">LIVE</span>
                     </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Based on client check-ins this week
-                    </p>
                   </Card>
                 </div>
 
                 <div className="mt-8">
                   <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-bold">Client Goals</h2>
+                    <h2 className="text-lg md:text-xl font-bold">Client Goals</h2>
                     <AddGoalDialog
                       clientId={selected.id}
                       onAdd={() => {
@@ -645,7 +646,7 @@ function CoachDashboard() {
                       }}
                     />
                   </div>
-                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                  <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                     {!selectedGoals || selectedGoals.length === 0 ? (
                       <Card className="col-span-full p-12 text-center text-muted-foreground">
                         No goals found for this client.
@@ -654,98 +655,86 @@ function CoachDashboard() {
                       selectedGoals.map((g) => (
                         <Card
                           key={g.id}
-                          className="relative flex flex-col p-5 group hover:shadow-glow transition-all border-border/50"
+                          className="relative flex flex-col p-4 md:p-5 group hover:shadow-glow transition-all border-border/50"
                         >
                           <div className="flex items-start justify-between mb-3">
                             <button
                               onClick={() => toggleGoal(g.id, g.status)}
-                              className="transition-colors hover:text-primary"
+                              className="transition-colors hover:text-primary shrink-0"
                             >
                               {g.status === "COMPLETED" ? (
                                 <CheckCircle2 className="h-5 w-5 text-primary" />
                               ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground" />
+                                <Circle className="h-5 w-5 text-muted-foreground opacity-50" />
                               )}
                             </button>
-                            <span
-                              className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${
-                                g.priority === "HIGH"
-                                  ? "bg-destructive/10 text-destructive"
-                                  : g.priority === "MEDIUM"
-                                    ? "bg-primary/10 text-primary"
-                                    : "bg-muted text-muted-foreground"
-                              }`}
+                            <Badge
+                              variant={g.priority === "HIGH" ? "destructive" : "secondary"}
+                              className="text-[9px] h-4 py-0 font-bold"
                             >
                               {g.priority}
-                            </span>
+                            </Badge>
                           </div>
 
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <h3
-                              className={`font-semibold text-sm line-clamp-2 ${g.status === "COMPLETED" ? "line-through text-muted-foreground" : ""}`}
+                              className={`font-semibold text-sm line-clamp-2 leading-tight ${g.status === "COMPLETED" ? "line-through text-muted-foreground" : ""}`}
                             >
                               {g.title}
                             </h3>
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              <p className="text-[10px] text-muted-foreground bg-muted/50 px-2 py-0.5 rounded">
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              <span className="text-[9px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded font-medium">
                                 {g.category}
-                              </p>
+                              </span>
                               {g.coachFeedback && (
                                 <Badge
                                   variant="outline"
-                                  className="text-[9px] h-4 py-0 bg-amber-50 text-amber-700 border-amber-200"
+                                  className="text-[9px] h-4 py-0 bg-amber-50 text-amber-700 border-amber-200 font-bold"
                                 >
-                                  Feedback
+                                  Has Feedback
                                 </Badge>
-                              )}
-                              {g.createdAt && (
-                                <p className="text-[10px] text-muted-foreground bg-primary/5 px-2 py-0.5 rounded">
-                                  Added:{" "}
-                                  {new Date(g.createdAt).toLocaleString(undefined, {
-                                    dateStyle: "short",
-                                    timeStyle: "short",
-                                  })}
-                                </p>
                               )}
                             </div>
                           </div>
 
                           <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
-                            <div className="flex flex-col gap-1">
+                            <div className="flex flex-col gap-0.5 min-w-0">
                               {g.dueDate && (
-                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                  <Calendar className="h-3 w-3" />
-                                  {new Date(g.dueDate).toLocaleDateString()}
+                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground truncate">
+                                  <Calendar className="h-2.5 w-2.5 shrink-0" />
+                                  {new Date(g.dueDate).toLocaleDateString([], { month: "short", day: "numeric" })}
                                 </div>
                               )}
                               {g.startTime && (
-                                <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-                                  <Clock className="h-3 w-3" />
+                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                                  <Clock className="h-2.5 w-2.5 shrink-0" />
                                   {g.startTime}
                                 </div>
                               )}
                             </div>
 
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-0.5 shrink-0">
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 text-primary hover:bg-primary/5"
                                 onClick={() => {
                                   setPreviewGoal(g);
                                   setPreviewDialogOpen(true);
                                 }}
+                                title="View Details"
                               >
                                 <Eye className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-7 w-7"
+                                className="h-7 w-7 text-primary hover:bg-primary/5"
                                 onClick={() => {
                                   setEditingGoal(g);
                                   setEditDialogOpen(true);
                                 }}
+                                title="Edit Goal"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
@@ -754,6 +743,7 @@ function CoachDashboard() {
                                 size="icon"
                                 className="h-7 w-7 text-destructive hover:text-destructive hover:bg-destructive/10"
                                 onClick={() => setGoalToDelete(g.id)}
+                                title="Delete Goal"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
                               </Button>
@@ -765,63 +755,19 @@ function CoachDashboard() {
                   </div>
                 </div>
 
-                <EditGoalDialog
-                  goal={editingGoal}
-                  open={editDialogOpen}
-                  onOpenChange={setEditDialogOpen}
-                  onUpdate={(updated) => {
-                    setSelectedGoals((prev) =>
-                      prev.map((g) => (g.id === updated.id ? updated : g)),
-                    );
-                    fetchClients();
-                  }}
-                />
-                <GoalPreviewDialog
-                  goal={previewGoal}
-                  open={previewDialogOpen}
-                  onOpenChange={setPreviewDialogOpen}
-                  onToggle={toggleGoal}
-                  onSubmitFeedback={submitGoalFeedback}
-                  onDeleteFeedback={deleteGoalFeedback}
-                />
-
-                <AlertDialog
-                  open={!!goalToDelete}
-                  onOpenChange={(o) => !o && setGoalToDelete(null)}
-                >
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the client's
-                        goal.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={confirmDelete}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        Delete Goal
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-
-                <div className="mt-8">
-                  <h2 className="text-xl font-bold mb-4">Client Food Logs</h2>
-                  <div className="grid gap-4 md:grid-cols-2">
+                <div className="mt-10">
+                  <h2 className="text-lg md:text-xl font-bold mb-4">Client Food Logs</h2>
+                  <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                     {!selectedFoodEntries || selectedFoodEntries.length === 0 ? (
-                      <Card className="col-span-full p-8 text-center text-muted-foreground">
+                      <Card className="col-span-full p-8 text-center text-muted-foreground bg-muted/20 border-dashed">
                         No food logs found for this client.
                       </Card>
                     ) : (
                       selectedFoodEntries.map((entry) => (
-                        <Card key={entry.id} className="p-5 border-border/50">
+                        <Card key={entry.id} className="p-4 md:p-5 border-border/50 hover:border-primary/20 transition-colors">
                           <div className="flex gap-4">
                             {entry.imageUrl && (
-                              <div className="w-16 h-16 rounded overflow-hidden flex-shrink-0 bg-muted">
+                              <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted border border-border">
                                 <img
                                   src={getMediaUrl(entry.imageUrl)}
                                   alt={entry.foodName}
@@ -829,19 +775,19 @@ function CoachDashboard() {
                                 />
                               </div>
                             )}
-                            <div className="flex-1">
-                              <div className="flex items-start justify-between mb-2">
-                                <div>
-                                  <h3 className="font-bold text-sm">{entry.foodName}</h3>
-                                  <div className="flex gap-2 mt-1 text-[10px] text-muted-foreground">
-                                    <span className="flex items-center gap-0.5">
-                                      <Utensils className="h-3 w-3" /> {entry.portion || "Normal"}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between mb-2 gap-2">
+                                <div className="min-w-0">
+                                  <h3 className="font-bold text-sm md:text-base truncate">{entry.foodName}</h3>
+                                  <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 text-[10px] text-muted-foreground font-medium">
+                                    <span className="flex items-center gap-1">
+                                      <Utensils className="h-2.5 w-2.5" /> {entry.portion || "Normal"}
                                     </span>
-                                    <span className="flex items-center gap-0.5 text-orange-600 font-medium">
-                                      <Flame className="h-3 w-3" /> {entry.calories} kcal
+                                    <span className="flex items-center gap-1 text-orange-600 font-bold">
+                                      <Flame className="h-2.5 w-2.5" /> {entry.calories} kcal
                                     </span>
-                                    <span className="flex items-center gap-0.5">
-                                      <Clock className="h-3 w-3" />{" "}
+                                    <span className="flex items-center gap-1 bg-muted/50 px-1.5 rounded">
+                                      <Clock className="h-2.5 w-2.5" />{" "}
                                       {new Date(entry.entryTime).toLocaleTimeString([], {
                                         hour: "2-digit",
                                         minute: "2-digit",
@@ -849,7 +795,7 @@ function CoachDashboard() {
                                     </span>
                                   </div>
                                 </div>
-                                <Badge variant="outline" className="text-[10px]">
+                                <Badge variant="outline" className="text-[9px] shrink-0 font-bold">
                                   {new Date(entry.entryTime).toLocaleDateString([], {
                                     month: "short",
                                     day: "numeric",
@@ -858,14 +804,14 @@ function CoachDashboard() {
                               </div>
 
                               {entry.aiFeedback && (
-                                <div className="mb-3 rounded-lg bg-primary/5 p-2 border border-primary/10">
-                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                <div className="mb-3 rounded-lg bg-primary/5 p-2 md:p-2.5 border border-primary/10">
+                                  <div className="flex items-center gap-1.5 mb-1">
                                     <Sparkles className="h-3 w-3 text-primary" />
-                                    <span className="text-[9px] font-bold uppercase tracking-wider text-primary">
-                                      AI Coach Feedback
+                                    <span className="text-[8px] font-bold uppercase tracking-wider text-primary">
+                                      AI Insight
                                     </span>
                                   </div>
-                                  <p className="text-xs text-foreground/80 italic">
+                                  <p className="text-[11px] md:text-xs text-foreground/80 italic leading-relaxed">
                                     "{entry.aiFeedback}"
                                   </p>
                                 </div>
@@ -873,17 +819,17 @@ function CoachDashboard() {
                             </div>
                           </div>
 
-                          <div className="pt-3 border-t border-border/50">
-                            <label className="text-[10px] font-bold text-muted-foreground uppercase mb-1.5 block">
-                              Your Feedback
+                          <div className="pt-3 mt-1 border-t border-border/50">
+                            <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1.5 block tracking-widest">
+                              Your Coaching Feedback
                             </label>
                             {entry.coachFeedback ? (
-                              <div className="rounded-lg bg-amber-50 p-2 border border-amber-100 text-xs text-foreground/80">
-                                {entry.coachFeedback}
+                              <div className="rounded-lg bg-amber-50 p-2.5 border border-amber-100 text-xs text-foreground/80 flex items-start justify-between gap-2">
+                                <p className="leading-relaxed">{entry.coachFeedback}</p>
                                 <Button
                                   variant="link"
                                   size="sm"
-                                  className="h-auto p-0 ml-2 text-[10px] text-amber-700 underline"
+                                  className="h-auto p-0 text-[10px] text-amber-700 underline shrink-0"
                                   onClick={() => {
                                     const next = prompt("Edit feedback:", entry.coachFeedback);
                                     if (next !== null) submitFoodFeedback(entry.id, next);
@@ -895,8 +841,8 @@ function CoachDashboard() {
                             ) : (
                               <div className="flex gap-2">
                                 <Input
-                                  placeholder="Type feedback..."
-                                  className="h-8 text-xs"
+                                  placeholder="Type feedback for client..."
+                                  className="h-8 text-xs md:text-sm"
                                   onKeyDown={(e) => {
                                     if (e.key === "Enter") {
                                       submitFoodFeedback(entry.id, e.currentTarget.value);
@@ -907,7 +853,7 @@ function CoachDashboard() {
                                 <Button
                                   size="sm"
                                   variant="secondary"
-                                  className="h-8 px-3 text-xs"
+                                  className="h-8 px-3 text-xs font-bold"
                                   onClick={(e) => {
                                     const input = e.currentTarget
                                       .previousElementSibling as HTMLInputElement;
@@ -991,6 +937,50 @@ function CoachDashboard() {
           </motion.div>
         )}
       </main>
+
+      <EditGoalDialog
+        goal={editingGoal}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onUpdate={(updated) => {
+          setSelectedGoals((prev) =>
+            prev.map((g) => (g.id === updated.id ? updated : g)),
+          );
+          fetchClients();
+        }}
+      />
+      <GoalPreviewDialog
+        goal={previewGoal}
+        open={previewDialogOpen}
+        onOpenChange={setPreviewDialogOpen}
+        onToggle={toggleGoal}
+        onSubmitFeedback={submitGoalFeedback}
+        onDeleteFeedback={deleteGoalFeedback}
+      />
+
+      <AlertDialog
+        open={!!goalToDelete}
+        onOpenChange={(o) => !o && setGoalToDelete(null)}
+      >
+        <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the client's
+              goal.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Delete Goal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
