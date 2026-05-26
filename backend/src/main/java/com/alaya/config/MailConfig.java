@@ -27,25 +27,33 @@ public class MailConfig {
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
-        // Explicitly trim the host to avoid UnknownHostException from trailing spaces
         String cleanHost = (host != null) ? host.trim() : "smtp.gmail.com";
         mailSender.setHost(cleanHost);
+        
+        // If port is 465, we use SSL. If it's 587, we use STARTTLS.
+        // We'll favor 465 for Railway if 587 is timing out.
         mailSender.setPort(port);
         
-        // Trim username and password just in case
         mailSender.setUsername((username != null) ? username.trim() : "");
         mailSender.setPassword((password != null) ? password.trim() : "");
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.debug", "false"); // Set to true if you need to debug SMTP details in logs
         
-        // Timeouts to prevent hanging
-        props.put("mail.smtp.timeout", "5000");
-        props.put("mail.smtp.connectiontimeout", "5000");
-        props.put("mail.smtp.writetimeout", "5000");
+        if (port == 465) {
+            props.put("mail.smtp.socketFactory.port", "465");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.ssl.enable", "true");
+        } else {
+            props.put("mail.smtp.starttls.enable", "true");
+        }
+        
+        props.put("mail.debug", "true"); // Enabling debug to see exact handshake in Railway logs
+        
+        props.put("mail.smtp.timeout", "10000");
+        props.put("mail.smtp.connectiontimeout", "10000");
+        props.put("mail.smtp.writetimeout", "10000");
 
         return mailSender;
     }
