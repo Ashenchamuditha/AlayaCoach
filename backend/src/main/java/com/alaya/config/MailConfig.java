@@ -27,34 +27,34 @@ public class MailConfig {
     public JavaMailSender javaMailSender() {
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
         
-        String cleanHost = (host != null) ? host.trim() : "smtp.gmail.com";
+        // Use Resend as the primary production host
+        String cleanHost = (host != null && !host.contains("gmail")) ? host.trim() : "smtp.resend.com";
         mailSender.setHost(cleanHost);
-        mailSender.setPort(port == 0 ? 587 : port);
         
-        mailSender.setUsername((username != null) ? username.trim() : "");
+        // Port 587 is standard for Resend
+        mailSender.setPort(port == 0 || port == 465 ? 587 : port);
+        
+        // For Resend, username is ALWAYS "resend"
+        if (cleanHost.contains("resend")) {
+            mailSender.setUsername("resend");
+        } else {
+            mailSender.setUsername((username != null) ? username.trim() : "");
+        }
+        
         mailSender.setPassword((password != null) ? password.trim() : "");
 
         Properties props = mailSender.getJavaMailProperties();
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
-        
-        // Gmail requires modern TLS
-        props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
-        
-        if (port == 465) {
-            props.put("mail.smtp.socketFactory.port", "465");
-            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            props.put("mail.smtp.ssl.enable", "true");
-        } else {
-            props.put("mail.smtp.starttls.enable", "true");
-            props.put("mail.smtp.starttls.required", "true");
-        }
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2");
         
         props.put("mail.debug", "true");
         
-        props.put("mail.smtp.timeout", "10000");
-        props.put("mail.smtp.connectiontimeout", "10000");
-        props.put("mail.smtp.writetimeout", "10000");
+        props.put("mail.smtp.timeout", "15000");
+        props.put("mail.smtp.connectiontimeout", "15000");
+        props.put("mail.smtp.writetimeout", "15000");
 
         return mailSender;
     }

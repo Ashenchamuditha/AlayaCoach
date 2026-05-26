@@ -19,7 +19,10 @@ public class EmailService {
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("Alaya Master Coach <ashen.chamu123@gmail.com>");
+            
+            // Using a more generic name. 
+            // NOTE: If using Resend without a verified domain, this must be "onboarding@resend.dev"
+            helper.setFrom("Alaya Master Coach <onboarding@resend.dev>");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
