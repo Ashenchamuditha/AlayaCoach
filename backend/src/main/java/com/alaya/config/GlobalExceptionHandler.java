@@ -1,5 +1,6 @@
 package com.alaya.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -10,15 +11,18 @@ import java.util.HashMap;
 import java.util.Map;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, String>> handleIllegalArgument(IllegalArgumentException ex) {
+        log.warn("Bad Request: {}", ex.getMessage());
         return createErrorResponse(ex.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<Map<String, String>> handleBadCredentials(BadCredentialsException ex) {
+        log.warn("Authentication Failed: {}", ex.getMessage());
         return createErrorResponse("Invalid password. Please try again.", HttpStatus.UNAUTHORIZED);
     }
 
@@ -27,11 +31,13 @@ public class GlobalExceptionHandler {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .collect(java.util.stream.Collectors.joining(", "));
+        log.warn("Validation Failed: {}", errorMsg);
         return createErrorResponse("Validation failed: " + errorMsg, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
+        log.error("Unexpected Error: ", ex);
         String message = ex.getMessage();
         if (message != null && message.contains("User not found")) {
             return createErrorResponse("Username not found. Please register first.", HttpStatus.NOT_FOUND);
