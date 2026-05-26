@@ -29,10 +29,7 @@ public class MailConfig {
         
         String cleanHost = (host != null) ? host.trim() : "smtp.gmail.com";
         mailSender.setHost(cleanHost);
-        
-        // If port is 465, we use SSL. If it's 587, we use STARTTLS.
-        // We'll favor 465 for Railway if 587 is timing out.
-        mailSender.setPort(port);
+        mailSender.setPort(port == 0 ? 587 : port);
         
         mailSender.setUsername((username != null) ? username.trim() : "");
         mailSender.setPassword((password != null) ? password.trim() : "");
@@ -41,15 +38,19 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         
+        // Gmail requires modern TLS
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+        
         if (port == 465) {
             props.put("mail.smtp.socketFactory.port", "465");
             props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
             props.put("mail.smtp.ssl.enable", "true");
         } else {
             props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.starttls.required", "true");
         }
         
-        props.put("mail.debug", "true"); // Enabling debug to see exact handshake in Railway logs
+        props.put("mail.debug", "true");
         
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.connectiontimeout", "10000");
