@@ -55,8 +55,14 @@ function RegisterPage() {
     }
   }, [user, navigate]);
 
-  const sendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    if (otp.length === 6 && step === "OTP") {
+      verifyOtp();
+    }
+  }, [otp]);
+
+  const sendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError(null);
     setLoading(true);
     try {
@@ -73,12 +79,10 @@ function RegisterPage() {
     }
   };
 
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 6) {
-      setError("Please enter the full 6-digit code");
-      return;
-    }
+  const verifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (otp.length < 6) return;
+    
     setError(null);
     setLoading(true);
     try {
@@ -90,6 +94,7 @@ function RegisterPage() {
       } else {
         setError("An unexpected error occurred");
       }
+      setOtp(""); // Clear OTP on failure to allow re-entry
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -30,6 +30,12 @@ function ForgotPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    if (otp.length === 6 && step === "OTP") {
+      verifyOtp();
+    }
+  }, [otp]);
+
   const sendOtp = async (e?: React.FormEvent) => {
     e?.preventDefault();
     setError(null);
@@ -49,14 +55,25 @@ function ForgotPasswordPage() {
     }
   };
 
-  const verifyOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (otp.length < 6) {
-      setError("Please enter the full 6-digit code");
-      return;
-    }
-    setStep("RESET");
+  const verifyOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (otp.length < 6) return;
+    
     setError(null);
+    setLoading(true);
+    try {
+      await api.post("/auth/verify-forgot-password", { email, otp });
+      setStep("RESET");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.message || "Invalid or expired code");
+      } else {
+        setError("An unexpected error occurred");
+      }
+      setOtp(""); // Clear on failure
+    } finally {
+      setLoading(false);
+    }
   };
 
   const resetPassword = async (e: React.FormEvent) => {

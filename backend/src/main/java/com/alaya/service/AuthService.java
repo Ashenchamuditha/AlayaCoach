@@ -32,12 +32,10 @@ public class AuthService {
     }
 
     public void verifySignupOtp(OtpVerifyRequest req) {
-        boolean verified = otpService.verifyOtp(req.getEmail(), req.getOtp(), OtpToken.TokenType.SIGNUP);
+        boolean verified = otpService.verifyOtp(req.getEmail(), req.getOtp(), OtpToken.TokenType.SIGNUP, false);
         if (!verified) {
             throw new IllegalArgumentException("Invalid or expired OTP");
         }
-        // Verification success can be tracked in session or via a temporary flag if needed, 
-        // but here we'll assume the client will proceed to register.
     }
 
     public AuthResponse register(AuthRequest req) {
@@ -139,6 +137,13 @@ public class AuthService {
         String otp = otpService.generateOtp();
         otpService.saveOtp(req.getEmail(), otp, OtpToken.TokenType.FORGOT_PASSWORD);
         emailService.sendPasswordResetOtpEmail(req.getEmail(), otp);
+    }
+
+    public void verifyForgotPasswordOtp(OtpVerifyRequest req) {
+        boolean verified = otpService.verifyOtp(req.getEmail(), req.getOtp(), OtpToken.TokenType.FORGOT_PASSWORD, false);
+        if (!verified) {
+            throw new IllegalArgumentException("Invalid or expired OTP");
+        }
     }
 
     public void resetPassword(ResetPasswordRequest req) {

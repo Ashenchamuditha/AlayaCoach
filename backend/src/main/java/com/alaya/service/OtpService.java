@@ -34,13 +34,20 @@ public class OtpService {
 
     @Transactional
     public boolean verifyOtp(String email, String otp, OtpToken.TokenType type) {
+        return verifyOtp(email, otp, type, true);
+    }
+
+    @Transactional
+    public boolean verifyOtp(String email, String otp, OtpToken.TokenType type, boolean deleteIfValid) {
         return otpTokenRepository.findByEmailAndOtpAndType(email, otp, type)
                 .map(token -> {
                     if (token.isExpired()) {
                         otpTokenRepository.delete(token);
                         return false;
                     }
-                    otpTokenRepository.delete(token);
+                    if (deleteIfValid) {
+                        otpTokenRepository.delete(token);
+                    }
                     return true;
                 })
                 .orElse(false);

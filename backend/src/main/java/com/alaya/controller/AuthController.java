@@ -44,6 +44,12 @@ public class AuthController {
         return ResponseEntity.ok(Map.of("message", "Password reset code sent to " + req.getEmail()));
     }
 
+    @PostMapping("/verify-forgot-password")
+    public ResponseEntity<?> verifyForgotPassword(@RequestBody OtpVerifyRequest req) {
+        authService.verifyForgotPasswordOtp(req);
+        return ResponseEntity.ok(Map.of("message", "Code verified successfully"));
+    }
+
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest req) {
         authService.resetPassword(req);

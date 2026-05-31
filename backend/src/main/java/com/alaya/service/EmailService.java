@@ -50,10 +50,15 @@ public class EmailService {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // If using Resend SMTP, the username is 'resend', so we need a proper from address
-            String sender = resendFromEmail;
-            if (sender == null || !sender.contains("@") || sender.contains("onboarding@resend.dev")) {
-                sender = (smtpUsername != null && smtpUsername.contains("@")) ? smtpUsername : "ashen.chamu123@gmail.com";
+            // Determine the best 'from' address
+            String sender = "ashen.chamu123@gmail.com"; // Absolute default
+            
+            if (resendFromEmail != null && resendFromEmail.contains("@") && !resendFromEmail.contains("onboarding@resend.dev")) {
+                sender = resendFromEmail;
+            } else if (smtpUsername != null && smtpUsername.contains("@")) {
+                sender = smtpUsername;
+            } else if (resendFromEmail != null && !resendFromEmail.isBlank()) {
+                sender = resendFromEmail; // Use onboarding@resend.dev if that's all we have
             }
             
             helper.setFrom("Alaya Master Coach <" + sender + ">");
@@ -61,7 +66,7 @@ public class EmailService {
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
             mailSender.send(message);
-            log.info("Email sent successfully via SMTP to {}", to);
+            log.info("Email sent successfully via SMTP to {} from {}", to, sender);
         } catch (Exception e) {
             log.error("CRITICAL: Failed to send email via SMTP to {}. Error: {}", to, e.getMessage());
         }
