@@ -25,7 +25,6 @@ public class MailConfig {
 
     @Bean
     public JavaMailSender javaMailSender() {
-        // Force IPv4
         System.setProperty("java.net.preferIPv4Stack", "true");
         
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
@@ -33,34 +32,32 @@ public class MailConfig {
         String cleanHost = (host != null && !host.isBlank()) ? host.trim() : "smtp.gmail.com";
         mailSender.setHost(cleanHost);
         
-        int cleanPort = (port == 0) ? 465 : port; // Default to 465 for SSL
+        int cleanPort = (port == 0) ? 465 : port;
         mailSender.setPort(cleanPort);
         
         mailSender.setUsername((username != null) ? username.trim() : "");
         mailSender.setPassword((password != null) ? password.trim() : "");
 
         Properties props = mailSender.getJavaMailProperties();
-        props.put("mail.transport.protocol", "smtp");
-        props.put("mail.smtp.auth", "true");
         
         if (cleanPort == 465) {
-            // SSL Settings for Port 465
-            props.put("mail.smtp.ssl.enable", "true");
-            props.put("mail.smtp.socketFactory.port", "465");
-            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
-            props.put("mail.smtp.socketFactory.fallback", "false");
+            mailSender.setProtocol("smtps");
+            props.put("mail.smtps.auth", "true");
+            props.put("mail.smtps.ssl.enable", "true");
+            props.put("mail.smtps.ssl.trust", "smtp.gmail.com");
+            props.put("mail.smtps.timeout", "10000");
+            props.put("mail.smtps.connectiontimeout", "10000");
         } else {
-            // STARTTLS Settings for Port 587
+            mailSender.setProtocol("smtp");
+            props.put("mail.smtp.auth", "true");
             props.put("mail.smtp.starttls.enable", "true");
             props.put("mail.smtp.starttls.required", "true");
+            props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
+            props.put("mail.smtp.timeout", "10000");
+            props.put("mail.smtp.connectiontimeout", "10000");
         }
-
-        props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-        props.put("mail.smtp.connectiontimeout", "10000");
-        props.put("mail.smtp.timeout", "10000");
-        props.put("mail.smtp.writetimeout", "10000");
+        
         props.put("mail.debug", "true");
-
         return mailSender;
     }
 }
