@@ -44,6 +44,7 @@ export function AIAssistant({ initialPrompt }: Props) {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [text, setText] = useState(initialPrompt || "");
   const [loading, setLoading] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -125,7 +126,7 @@ export function AIAssistant({ initialPrompt }: Props) {
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-3 md:p-6">
+      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-3 md:p-6 pb-12">
         <AnimatePresence initial={false}>
           {messages.map((m) => {
             const mine = m.role === "user";
@@ -138,7 +139,7 @@ export function AIAssistant({ initialPrompt }: Props) {
               >
                 <div
                   className={cn(
-                    "max-w-[88%] md:max-w-[80%] rounded-2xl px-3.5 py-2 text-xs md:text-sm shadow-sm",
+                    "max-w-[88%] md:max-w-[80%] rounded-2xl px-3.5 py-2.5 text-xs md:text-sm shadow-sm",
                     mine
                       ? "rounded-br-sm bg-gradient-brand text-white"
                       : "rounded-bl-sm border border-border bg-card text-foreground",
@@ -164,16 +165,39 @@ export function AIAssistant({ initialPrompt }: Props) {
       </div>
 
       {messages.length <= 1 && (
-        <div className="flex flex-wrap gap-1.5 border-t border-border bg-background px-3 py-2">
-          {suggestions.map((s) => (
-            <button
-              key={s}
-              onClick={() => send(s)}
-              className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] md:text-xs font-medium hover:bg-muted transition-colors active:scale-95"
+        <div className="border-t border-border bg-background px-3 py-2">
+          {!showSuggestions ? (
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setShowSuggestions(true)}
+              className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-primary gap-1.5 h-7 px-2"
             >
-              {s}
-            </button>
-          ))}
+              <Sparkles className="h-3 w-3" />
+              Get AI Suggestions
+            </Button>
+          ) : (
+            <div className="flex flex-wrap gap-1.5">
+              {suggestions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => {
+                    send(s);
+                    setShowSuggestions(false);
+                  }}
+                  className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-[10px] md:text-xs font-medium hover:bg-muted transition-colors active:scale-95"
+                >
+                  {s}
+                </button>
+              ))}
+              <button 
+                onClick={() => setShowSuggestions(false)}
+                className="text-[10px] md:text-xs font-bold text-muted-foreground ml-auto px-2"
+              >
+                Hide
+              </button>
+            </div>
+          )}
         </div>
       )}
 
