@@ -235,9 +235,21 @@ export function NotificationCenter() {
           <div className="py-4 text-sm leading-relaxed">
             {selectedNotification?.message}
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Close</Button>
-            <Button onClick={handleViewAction}>View Details</Button>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">Close</Button>
+            {selectedNotification?.type === "AI_SUGGESTION" ? (
+              <Button 
+                onClick={() => {
+                  setIsDialogOpen(false);
+                  navigate({ to: "/app", search: { tab: "ai", prompt: selectedNotification.message } as any });
+                }}
+                className="w-full sm:flex-1 bg-gradient-brand text-white"
+              >
+                Chat with AI
+              </Button>
+            ) : (
+              <Button onClick={handleViewAction} className="w-full sm:w-auto">View Details</Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
