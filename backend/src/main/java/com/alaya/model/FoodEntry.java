@@ -28,8 +28,7 @@ public class FoodEntry {
     private Integer calories;
 
     @Column(nullable = false)
-    @Builder.Default
-    private LocalDateTime entryTime = LocalDateTime.now();
+    private LocalDateTime entryTime;
 
     @Builder.Default
     private LocalDateTime updatedAt = LocalDateTime.now();

@@ -98,12 +98,16 @@ export function AddFoodDialog({ onAdd }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Format: YYYY-MM-DDTHH:mm:ss
+    const entryTime = new Date().toISOString().split('.')[0];
+
     setSubmitting(true);
     try {
       let response;
       if (file) {
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("entryTime", entryTime);
         if (form.foodName) formData.append("foodName", form.foodName);
         if (form.portion) formData.append("portion", form.portion);
         response = await api.post("/food/upload", formData, {
@@ -121,7 +125,7 @@ export function AddFoodDialog({ onAdd }: Props) {
           setSubmitting(false);
           return;
         }
-        response = await api.post("/food", parsed.data);
+        response = await api.post("/food", { ...parsed.data, entryTime });
       }
 
       onAdd(response.data);
