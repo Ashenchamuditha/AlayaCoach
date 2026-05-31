@@ -6,38 +6,77 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Service
 @Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
+    private final WebClient webClient;
 
-    @Value("${spring.mail.username}")
-    private String smtpUsername;
+    @Value("${resend.api.key}")
+    private String resendApiKey;
 
-    public EmailService(JavaMailSender mailSender) {
+    @Value("${resend.api.url}")
+    private String resendApiUrl;
+
+    @Value("${resend.from.email}")
+    private String resendFromEmail;
+
+    public EmailService(JavaMailSender mailSender, WebClient.Builder webClientBuilder) {
         this.mailSender = mailSender;
+        this.webClient = webClientBuilder.build();
     }
 
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
+        // Try Resend HTTP API first - This works on Railway because it uses Port 443 (HTTP)
+        if (resendApiKey != null && !resendApiKey.equals("NO_KEY")) {
+            try {
+                sendEmailViaResend(to, subject, htmlContent);
+                return;
+            } catch (Exception e) {
+                log.error("Resend HTTP API failed. Root cause: {}", e.getMessage());
+                // Fall through to SMTP backup
+            }
+        }
+
+        // Backup SMTP - Often blocked on Railway but useful for local testing
         try {
-            log.info("Preparing to send email to {} via SMTP host: {}", to, (smtpUsername != null ? "Gmail" : "Default"));
+            log.info("Attempting backup SMTP delivery to {}", to);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            String sender = (smtpUsername != null && smtpUsername.contains("@")) ? smtpUsername : "ashen.chamu123@gmail.com";
-            
-            helper.setFrom("Alaya Master Coach <" + sender + ">");
+            helper.setFrom("Alaya Master Coach <ashen.chamu123@gmail.com>");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
-            
             mailSender.send(message);
-            log.info("Email sent successfully to {}", to);
+            log.info("Email sent successfully via SMTP backup to {}", to);
         } catch (Exception e) {
-            log.error("CRITICAL EMAIL FAILURE: Could not send email to {}. Root cause: {}", to, e.getMessage(), e);
+            log.error("CRITICAL: All email delivery methods failed for {}. Error: {}", to, e.getMessage());
         }
+    }
+
+    private void sendEmailViaResend(String to, String subject, String htmlContent) {
+        log.info("Sending email to {} via Resend HTTP API", to);
+        
+        java.util.Map<String, Object> body = java.util.Map.of(
+            "from", "Alaya Master Coach <" + resendFromEmail + ">",
+            "to", java.util.List.of(to),
+            "subject", subject,
+            "html", htmlContent
+        );
+
+        webClient.post()
+                .uri(resendApiUrl)
+                .header("Authorization", "Bearer " + resendApiKey)
+                .header("Content-Type", "application/json")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(java.util.Map.class)
+                .block();
+        
+        log.info("Email sent successfully via Resend HTTP API to {}", to);
     }
 
     public void sendOtpEmail(String to, String otp) {
