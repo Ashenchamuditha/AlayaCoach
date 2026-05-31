@@ -31,6 +31,9 @@ public class AIService {
     @Value("${groq.api.model}")
     private String groqModel;
 
+    @Value("${groq.api.vision-model}")
+    private String groqVisionModel;
+
     @PostConstruct
     public void testConnection() {
         log.info("Checking Groq AI connection...");
@@ -103,7 +106,7 @@ public class AIService {
         }
 
         Map<String, Object> body = Map.of(
-            "model", "llama-3.2-11b-vision-preview",
+            "model", groqVisionModel,
             "messages", List.of(
                 Map.of("role", "user", "content", List.of(
                     Map.of("type", "text", "text", "Identify the food in this image." + context + 
@@ -118,6 +121,7 @@ public class AIService {
         );
 
         try {
+            log.info("Sending food image to Groq Vision API using model: {}", groqVisionModel);
             return client.post()
                     .uri(groqApiUrl)
                     .header("Authorization", "Bearer " + groqApiKey)
@@ -128,7 +132,7 @@ public class AIService {
                         response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
                                     log.error("GROQ VISION ERROR ({}): {}", response.statusCode(), errorBody);
-                                    return reactor.core.publisher.Mono.error(new RuntimeException("Vision AI failed"));
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Groq Vision API error: " + errorBody));
                                 })
                     )
                     .bodyToMono(Map.class)
@@ -146,7 +150,7 @@ public class AIService {
                     })
                     .block();
         } catch (Exception e) {
-            log.error("Groq Vision AI call failed after 30s: {}", e.getMessage());
+            log.error("Groq Vision AI call failed: {}", e.getMessage());
         }
         return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"We couldn't identify the food. Try logging manually.\", \"chatStarter\": \"Can you help me identify this food?\"}";
     }
