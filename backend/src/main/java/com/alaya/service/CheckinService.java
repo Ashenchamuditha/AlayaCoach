@@ -46,8 +46,8 @@ public class CheckinService {
         // Notify client about new AI feedback
         notificationService.createNotification(
                 clientId,
-                "New AI Coaching Suggestion",
-                "Your AI Coach has analyzed your recent check-in and provided some advice.",
+                "AI Coach Advice",
+                feedback,
                 com.alaya.model.Notification.NotificationType.AI_SUGGESTION,
                 String.valueOf(saved.getId())
         );

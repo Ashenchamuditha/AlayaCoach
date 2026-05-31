@@ -241,7 +241,8 @@ export function NotificationCenter() {
               <Button 
                 onClick={() => {
                   setIsDialogOpen(false);
-                  navigate({ to: "/app", search: { tab: "ai", prompt: selectedNotification.message } as any });
+                  const contextMsg = `Regarding the advice: "${selectedNotification.message}"\n\nHow can I implement this?`;
+                  navigate({ to: "/app", search: { tab: "ai", prompt: contextMsg } as any });
                 }}
                 className="w-full sm:flex-1 bg-gradient-brand text-white"
               >
