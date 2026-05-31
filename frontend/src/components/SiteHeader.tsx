@@ -54,10 +54,11 @@ export function SiteHeader() {
   ];
 
   const handleNavClick = (value: string) => {
+    // Clear prompt when switching tabs normally
     if (path !== "/app") {
       navigate({ to: "/app", search: { tab: value } as any });
     } else {
-      navigate({ to: "/app", search: (prev: any) => ({ ...prev, tab: value }) });
+      navigate({ to: "/app", search: { tab: value } as any });
     }
   };
 
