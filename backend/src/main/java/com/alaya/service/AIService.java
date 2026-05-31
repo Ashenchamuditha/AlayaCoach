@@ -92,9 +92,8 @@ public class AIService {
     }
 
     public String analyzeFoodImage(String base64Image, String manualName, String manualPortion) {
-        // Use a dedicated WebClient with longer timeout for vision tasks
         WebClient client = webClientBuilder
-                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024)) // 10MB limit
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
 
         String context = "";
@@ -108,21 +107,22 @@ public class AIService {
         Map<String, Object> body = Map.of(
             "model", groqVisionModel,
             "messages", List.of(
+                Map.of("role", "system", "content", "You are a specialized nutrition AI. You MUST respond ONLY with valid JSON. Do not include markdown formatting or explanations."),
                 Map.of("role", "user", "content", List.of(
                     Map.of("type", "text", "text", "Identify the food in this image." + context + 
                             " Estimate calories. Categorize as 'HEALTHY' or 'UNHEALTHY'. " +
                             "Give 1 sentence of advice and 1 suggested chat question. " +
-                            "Respond ONLY with a JSON object: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
+                            "JSON format: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
                     Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))
                 ))
             ),
             "max_tokens", 512,
-            "temperature", 0.1 // Lower temperature for more consistent JSON
+            "temperature", 0
         );
 
         try {
-            log.info("Sending food image to Groq Vision API using model: {}", groqVisionModel);
-            return client.post()
+            log.info("Analyzing food image with model: {}", groqVisionModel);
+            String rawResponse = client.post()
                     .uri(groqApiUrl)
                     .header("Authorization", "Bearer " + groqApiKey)
                     .header("Content-Type", "application/json")
@@ -131,12 +131,12 @@ public class AIService {
                     .onStatus(status -> status.isError(), response -> 
                         response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
-                                    log.error("GROQ VISION ERROR ({}): {}", response.statusCode(), errorBody);
-                                    return reactor.core.publisher.Mono.error(new RuntimeException("Groq Vision API error: " + errorBody));
+                                    log.error("GROQ VISION API ERROR ({}): {}", response.statusCode(), errorBody);
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Groq Vision error"));
                                 })
                     )
                     .bodyToMono(Map.class)
-                    .timeout(java.time.Duration.ofSeconds(30)) // Increased timeout to 30 seconds
+                    .timeout(java.time.Duration.ofSeconds(30))
                     .map(response -> {
                         if (response != null && response.containsKey("choices")) {
                             List<?> choices = (List<?>) response.get("choices");
@@ -146,11 +146,22 @@ public class AIService {
                                 return (String) message.get("content");
                             }
                         }
-                        return null;
+                        return "";
                     })
                     .block();
+
+            if (rawResponse != null) {
+                // Strip markdown code blocks if present
+                String cleanJson = rawResponse.trim();
+                if (cleanJson.startsWith("```json")) {
+                    cleanJson = cleanJson.substring(7, cleanJson.lastIndexOf("```")).trim();
+                } else if (cleanJson.startsWith("```")) {
+                    cleanJson = cleanJson.substring(3, cleanJson.lastIndexOf("```")).trim();
+                }
+                return cleanJson;
+            }
         } catch (Exception e) {
-            log.error("Groq Vision AI call failed: {}", e.getMessage());
+            log.error("AI Analysis failed: {}", e.getMessage());
         }
         return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"We couldn't identify the food. Try logging manually.\", \"chatStarter\": \"Can you help me identify this food?\"}";
     }
