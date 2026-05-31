@@ -25,7 +25,7 @@ public class MailConfig {
 
     @Bean
     public JavaMailSender javaMailSender() {
-        // Force IPv4 to prevent connection issues on some cloud networks
+        // Force IPv4
         System.setProperty("java.net.preferIPv4Stack", "true");
         
         JavaMailSenderImpl mailSender = new JavaMailSenderImpl();
@@ -33,7 +33,7 @@ public class MailConfig {
         String cleanHost = (host != null && !host.isBlank()) ? host.trim() : "smtp.gmail.com";
         mailSender.setHost(cleanHost);
         
-        int cleanPort = (port == 0) ? 587 : port;
+        int cleanPort = (port == 0) ? 465 : port; // Default to 465 for SSL
         mailSender.setPort(cleanPort);
         
         mailSender.setUsername((username != null) ? username.trim() : "");
@@ -43,17 +43,22 @@ public class MailConfig {
         props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         
-        // Gmail TLS Settings
-        props.put("mail.smtp.starttls.enable", "true");
-        props.put("mail.smtp.starttls.required", "true");
+        if (cleanPort == 465) {
+            // SSL Settings for Port 465
+            props.put("mail.smtp.ssl.enable", "true");
+            props.put("mail.smtp.socketFactory.port", "465");
+            props.put("mail.smtp.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
+            props.put("mail.smtp.socketFactory.fallback", "false");
+        } else {
+            // STARTTLS Settings for Port 587
+            props.put("mail.smtp.starttls.enable", "true");
+            props.put("mail.smtp.starttls.required", "true");
+        }
+
         props.put("mail.smtp.ssl.trust", "smtp.gmail.com");
-        
-        // Timeout Settings
         props.put("mail.smtp.connectiontimeout", "10000");
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.writetimeout", "10000");
-        
-        // Helpful for debugging in logs
         props.put("mail.debug", "true");
 
         return mailSender;
