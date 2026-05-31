@@ -13,6 +13,7 @@ import java.util.Map;
 
 /**
  * AIService calls the Groq API using Spring WebFlux WebClient (non-blocking).
+ * Updated May 2026 to support Llama 4 Multimodal series.
  */
 @Service
 @Slf4j
@@ -99,8 +100,6 @@ public class AIService {
         // Safety check: Log masked API key to help user verify in Railway logs
         if (groqApiKey != null && groqApiKey.length() > 10) {
             log.info("Vision AI using Key: {}...{}", groqApiKey.substring(0, 6), groqApiKey.substring(groqApiKey.length() - 4));
-        } else {
-            log.error("Vision AI: API Key is MISSING or too short!");
         }
 
         String context = "";
@@ -111,22 +110,21 @@ public class AIService {
             context += " The user says the portion is: " + manualPortion + ".";
         }
 
-        // Use the vision model from config, fallback to 11B which is more commonly available
+        // Use Llama 4 Scout as the primary vision model (May 2026 stable)
         String modelToUse = (groqVisionModel != null && !groqVisionModel.contains("NO_MODEL")) 
-            ? groqVisionModel : "llama-3.2-11b-vision-preview";
+            ? groqVisionModel : "meta-llama/llama-4-scout-17b-16e-instruct";
 
-        // Some vision models prefer all instructions in a single USER message
         Map<String, Object> body = Map.of(
             "model", modelToUse,
             "messages", List.of(
                 Map.of("role", "user", "content", List.of(
-                    Map.of("type", "text", "text", "You are a nutrition AI. Identify the food in this image." + context + 
+                    Map.of("type", "text", "text", "You are a specialized nutrition AI. Identify the food in this image." + context + 
                             " Estimate calories. Categorize as 'HEALTHY' or 'UNHEALTHY'. " +
                             "Respond ONLY with a JSON object: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
                     Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))
                 ))
             ),
-            "max_tokens", 512,
+            "max_tokens", 1024,
             "temperature", 0
         );
 
@@ -146,7 +144,7 @@ public class AIService {
                                 })
                     )
                     .bodyToMono(Map.class)
-                    .timeout(java.time.Duration.ofSeconds(45)) // Increased to 45s for larger models
+                    .timeout(java.time.Duration.ofSeconds(60))
                     .map(response -> {
                         if (response != null && response.containsKey("choices")) {
                             List<?> choices = (List<?>) response.get("choices");
@@ -160,15 +158,14 @@ public class AIService {
                     })
                     .block();
 
-            if (rawResponse != null) {
-                // Strip markdown code blocks if present
-                String cleanJson = rawResponse.trim();
-                if (cleanJson.startsWith("```json")) {
-                    cleanJson = cleanJson.substring(7, cleanJson.lastIndexOf("```")).trim();
-                } else if (cleanJson.startsWith("```")) {
-                    cleanJson = cleanJson.substring(3, cleanJson.lastIndexOf("```")).trim();
+            if (rawResponse != null && !rawResponse.isBlank()) {
+                // Smart JSON Extraction: Find the first { and last }
+                int start = rawResponse.indexOf("{");
+                int end = rawResponse.lastIndexOf("}");
+                if (start != -1 && end != -1 && end > start) {
+                    return rawResponse.substring(start, end + 1).trim();
                 }
-                return cleanJson;
+                return rawResponse.trim();
             }
         } catch (Exception e) {
             log.error("AI Analysis failed: {}", e.getMessage());
@@ -209,7 +206,7 @@ public class AIService {
                 Map.of("role", "system", "content", systemPrompt),
                 Map.of("role", "user", "content", userMessage)
             ),
-            "max_tokens", 150,
+            "max_tokens", 512,
             "temperature", 0.7
         );
 
