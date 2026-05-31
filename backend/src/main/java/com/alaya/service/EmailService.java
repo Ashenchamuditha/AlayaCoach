@@ -6,92 +6,37 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
-import java.util.Map;
-import java.util.List;
 
 @Service
 @Slf4j
 public class EmailService {
 
     private final JavaMailSender mailSender;
-    private final WebClient webClient;
 
     @Value("${spring.mail.username}")
     private String smtpUsername;
 
-    @Value("${resend.api.key}")
-    private String resendApiKey;
-
-    @Value("${resend.api.url}")
-    private String resendApiUrl;
-
-    @Value("${resend.from.email}")
-    private String resendFromEmail;
-
-    public EmailService(JavaMailSender mailSender, WebClient.Builder webClientBuilder) {
+    public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
-        this.webClient = webClientBuilder.build();
     }
 
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
-        // Try Resend HTTP API first if API key is present and valid
-        if (resendApiKey != null && resendApiKey.startsWith("re_") && !resendApiKey.contains("NO_KEY")) {
-            try {
-                sendEmailViaResend(to, subject, htmlContent);
-                return;
-            } catch (Exception e) {
-                log.error("Resend HTTP API failed, falling back to SMTP. Error: {}", e.getMessage());
-            }
-        }
-
-        // Fallback to SMTP
         try {
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Determine the best 'from' address
-            String sender = "ashen.chamu123@gmail.com"; // Absolute default
-            
-            if (resendFromEmail != null && resendFromEmail.contains("@") && !resendFromEmail.contains("onboarding@resend.dev")) {
-                sender = resendFromEmail;
-            } else if (smtpUsername != null && smtpUsername.contains("@")) {
-                sender = smtpUsername;
-            } else if (resendFromEmail != null && !resendFromEmail.isBlank()) {
-                sender = resendFromEmail; // Use onboarding@resend.dev if that's all we have
-            }
+            // For Gmail, the 'from' address MUST match the authenticated username or an alias
+            String sender = (smtpUsername != null && smtpUsername.contains("@")) ? smtpUsername : "ashen.chamu123@gmail.com";
             
             helper.setFrom("Alaya Master Coach <" + sender + ">");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
             mailSender.send(message);
-            log.info("Email sent successfully via SMTP to {} from {}", to, sender);
+            log.info("Email sent successfully via Gmail SMTP to {}", to);
         } catch (Exception e) {
-            log.error("CRITICAL: Failed to send email via SMTP to {}. Error: {}", to, e.getMessage());
+            log.error("CRITICAL: Failed to send email via Gmail SMTP to {}. Error: {}", to, e.getMessage());
         }
-    }
-
-    private void sendEmailViaResend(String to, String subject, String htmlContent) {
-        log.info("Attempting to send email via Resend HTTP API to {}", to);
-        
-        Map<String, Object> body = Map.of(
-            "from", "Alaya Master Coach <" + resendFromEmail + ">",
-            "to", List.of(to),
-            "subject", subject,
-            "html", htmlContent
-        );
-
-        webClient.post()
-                .uri(resendApiUrl)
-                .header("Authorization", "Bearer " + resendApiKey)
-                .header("Content-Type", "application/json")
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(Map.class)
-                .block();
-        
-        log.info("Email sent successfully via Resend HTTP API to {}", to);
     }
 
     public void sendOtpEmail(String to, String otp) {
