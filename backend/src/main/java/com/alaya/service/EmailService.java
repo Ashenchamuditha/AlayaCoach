@@ -22,20 +22,21 @@ public class EmailService {
 
     public void sendHtmlEmail(String to, String subject, String htmlContent) {
         try {
+            log.info("Preparing to send email to {} via SMTP host: {}", to, (smtpUsername != null ? "Gmail" : "Default"));
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // For Gmail, the 'from' address MUST match the authenticated username or an alias
             String sender = (smtpUsername != null && smtpUsername.contains("@")) ? smtpUsername : "ashen.chamu123@gmail.com";
             
             helper.setFrom("Alaya Master Coach <" + sender + ">");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
+            
             mailSender.send(message);
-            log.info("Email sent successfully via Gmail SMTP to {}", to);
+            log.info("Email sent successfully to {}", to);
         } catch (Exception e) {
-            log.error("CRITICAL: Failed to send email via Gmail SMTP to {}. Error: {}", to, e.getMessage());
+            log.error("CRITICAL EMAIL FAILURE: Could not send email to {}. Root cause: {}", to, e.getMessage(), e);
         }
     }
 
