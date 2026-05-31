@@ -96,6 +96,13 @@ public class AIService {
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
 
+        // Safety check: Log masked API key to help user verify in Railway logs
+        if (groqApiKey != null && groqApiKey.length() > 10) {
+            log.info("Vision AI using Key: {}...{}", groqApiKey.substring(0, 6), groqApiKey.substring(groqApiKey.length() - 4));
+        } else {
+            log.error("Vision AI: API Key is MISSING or too short!");
+        }
+
         String context = "";
         if (manualName != null && !manualName.trim().isEmpty()) {
             context += " The user says this is: " + manualName + ".";
@@ -104,15 +111,18 @@ public class AIService {
             context += " The user says the portion is: " + manualPortion + ".";
         }
 
+        // Use the vision model from config, fallback to 11B which is more commonly available
+        String modelToUse = (groqVisionModel != null && !groqVisionModel.contains("NO_MODEL")) 
+            ? groqVisionModel : "llama-3.2-11b-vision-preview";
+
+        // Some vision models prefer all instructions in a single USER message
         Map<String, Object> body = Map.of(
-            "model", groqVisionModel,
+            "model", modelToUse,
             "messages", List.of(
-                Map.of("role", "system", "content", "You are a specialized nutrition AI. You MUST respond ONLY with valid JSON. Do not include markdown formatting or explanations."),
                 Map.of("role", "user", "content", List.of(
-                    Map.of("type", "text", "text", "Identify the food in this image." + context + 
+                    Map.of("type", "text", "text", "You are a nutrition AI. Identify the food in this image." + context + 
                             " Estimate calories. Categorize as 'HEALTHY' or 'UNHEALTHY'. " +
-                            "Give 1 sentence of advice and 1 suggested chat question. " +
-                            "JSON format: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
+                            "Respond ONLY with a JSON object: {\"foodName\": \"...\", \"calories\": 123, \"classification\": \"HEALTHY|UNHEALTHY\", \"feedback\": \"...\", \"chatStarter\": \"...\"}"),
                     Map.of("type", "image_url", "image_url", Map.of("url", "data:image/jpeg;base64," + base64Image))
                 ))
             ),
@@ -121,10 +131,10 @@ public class AIService {
         );
 
         try {
-            log.info("Analyzing food image with model: {}", groqVisionModel);
+            log.info("Analyzing food image with model: {}", modelToUse);
             String rawResponse = client.post()
                     .uri(groqApiUrl)
-                    .header("Authorization", "Bearer " + groqApiKey)
+                    .header("Authorization", "Bearer " + groqApiKey.trim())
                     .header("Content-Type", "application/json")
                     .bodyValue(body)
                     .retrieve()
@@ -132,11 +142,11 @@ public class AIService {
                         response.bodyToMono(String.class)
                                 .flatMap(errorBody -> {
                                     log.error("GROQ VISION API ERROR ({}): {}", response.statusCode(), errorBody);
-                                    return reactor.core.publisher.Mono.error(new RuntimeException("Groq Vision error"));
+                                    return reactor.core.publisher.Mono.error(new RuntimeException("Groq Vision error: " + errorBody));
                                 })
                     )
                     .bodyToMono(Map.class)
-                    .timeout(java.time.Duration.ofSeconds(30))
+                    .timeout(java.time.Duration.ofSeconds(45)) // Increased to 45s for larger models
                     .map(response -> {
                         if (response != null && response.containsKey("choices")) {
                             List<?> choices = (List<?>) response.get("choices");
