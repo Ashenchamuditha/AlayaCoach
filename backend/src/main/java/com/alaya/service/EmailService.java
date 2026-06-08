@@ -79,6 +79,51 @@ public class EmailService {
         log.info("Email sent successfully via Resend HTTP API to {}", to);
     }
 
+    public void sendWelcomeEmail(String to, String userName) {
+        String subject = "Welcome to Alaya Master Coach! 🚀";
+        String html = getWelcomeTemplate(userName);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    private String getWelcomeTemplate(String userName) {
+        return "<!DOCTYPE html>" +
+               "<html>" +
+               "<head>" +
+               "<style>" +
+               "  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; text-align: left; color: #333333; }" +
+               "  .feature-list { margin: 25px 0; padding: 0; list-style-type: none; }" +
+               "  .feature-item { margin-bottom: 12px; padding-left: 25px; position: relative; }" +
+               "  .feature-item:before { content: '✓'; position: absolute; left: 0; color: #6366f1; font-weight: bold; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 14px 28px; background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: #ffffff; text-decoration: none; border-radius: 8px; font-weight: 600; margin-top: 20px; box-shadow: 0 4px 6px rgba(99, 102, 241, 0.2); }" +
+               "</style>" +
+               "</head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Welcome to Alaya!</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hi " + userName + ",</p>" +
+               "      <p>We're absolutely thrilled to have you join <strong>Alaya Master Coach</strong>! Your journey to a healthier, more productive life starts right now.</p>" +
+               "      <p>Here's what you can do next:</p>" +
+               "      <ul class='feature-list'>" +
+               "        <li class='feature-item'>Set your daily health and productivity goals</li>" +
+               "        <li class='feature-item'>Log your meals and get instant AI nutrition analysis</li>" +
+               "        <li class='feature-item'>Connect with your dedicated coach for personalized advice</li>" +
+               "        <li class='feature-item'>Track your progress with AI-powered weekly reports</li>" +
+               "      </ul>" +
+               "      <p>Ready to get started? Log in to your dashboard and complete your first goal today!</p>" +
+               "      <center><a href='https://alaya-coach.vercel.app' class='button'>Go to My Dashboard</a></center>" +
+               "      <p style='margin-top: 30px;'>Stay focused,<br><strong>The Alaya Team</strong></p>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body>" +
+               "</html>";
+    }
+
     public void sendOtpEmail(String to, String otp) {
         log.info("ALAYA SYSTEM - BACKUP OTP FOR {}: [{}]", to, otp);
         String subject = "Your Alaya Verification Code";

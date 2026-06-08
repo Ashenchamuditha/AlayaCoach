@@ -92,6 +92,14 @@ public class AuthService {
 
         User saved = userRepository.save(builder.build());
 
+        // Send Welcome Email
+        try {
+            emailService.sendWelcomeEmail(saved.getEmail(), saved.getFullName());
+        } catch (Exception e) {
+            // Log error but don't fail registration
+            System.err.println("Failed to send welcome email: " + e.getMessage());
+        }
+
         // ... (rest of the notifications)
         notificationService.createNotification(
                 saved.getId(),
