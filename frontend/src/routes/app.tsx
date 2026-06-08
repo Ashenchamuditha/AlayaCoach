@@ -824,14 +824,14 @@ function ClientDashboard() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
                           className={cn(
-                            "flex items-center justify-between gap-2 rounded-lg border border-border p-3 transition hover:bg-muted/50",
+                            "flex items-start justify-between gap-3 rounded-xl border border-border p-3 md:p-4 transition hover:bg-muted/50 shadow-sm",
                             g.createdByCoach && "bg-amber-50/30 border-amber-100"
                           )}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 mb-1">
                               <p
-                                className={`text-sm font-medium truncate min-w-0 ${g.done ? "text-muted-foreground line-through" : ""}`}
+                                className={`text-sm md:text-base font-semibold leading-tight break-words ${g.done ? "text-muted-foreground line-through" : ""}`}
                               >
                                 {g.title}
                               </p>
@@ -841,18 +841,18 @@ function ClientDashboard() {
                                 </Badge>
                               )}
                             </div>
-                            <div className="flex flex-wrap gap-1.5 mt-1">
-                              <Badge variant="outline" className="text-[8px] h-3.5 py-0 px-1.5 shrink-0">
+                            <div className="flex flex-wrap gap-1.5">
+                              <Badge variant="outline" className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0">
                                 {g.category}
                               </Badge>
                               <Badge
                                 variant={g.priority === "high" ? "destructive" : "secondary"}
-                                className="text-[8px] h-3.5 py-0 px-1.5 shrink-0"
+                                className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0"
                               >
                                 {g.priority}
                               </Badge>
                               {g.createdAt && (
-                                <span className="text-[8px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1 shrink-0">
+                                <span className="text-[8px] md:text-[9px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1 shrink-0">
                                   <Clock className="h-2.5 w-2.5" />
                                   {new Date(g.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                 </span>
@@ -860,35 +860,35 @@ function ClientDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
+                          <div className="flex items-center gap-1 md:gap-2 shrink-0 self-center">
                             {g.done ? (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 w-8 md:w-auto text-[10px] p-0 md:px-3 text-amber-600 border-amber-200 rounded-full md:rounded-md flex items-center justify-center shrink-0"
+                                className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 text-amber-600 border-amber-200 rounded-full md:rounded-lg flex items-center justify-center shrink-0"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
                                 title="Re-activate"
                               >
-                                <span className="hidden md:inline">{togglingIds.has(g.id) ? "Wait..." : "Re-activate"}</span>
+                                <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Re-activate"}</span>
                                 <RefreshCw className={cn("h-4 w-4 md:hidden", togglingIds.has(g.id) && "animate-spin")} />
                               </Button>
                             ) : (
                               <Button
                                 size="sm"
-                                className="h-8 w-8 md:w-auto text-[10px] p-0 md:px-3 bg-green-600 hover:bg-green-700 text-white rounded-full md:rounded-md flex items-center justify-center shrink-0"
+                                className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 bg-green-600 hover:bg-green-700 text-white rounded-full md:rounded-lg flex items-center justify-center shrink-0"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
                                 title="Complete"
                               >
-                                <span className="hidden md:inline">{togglingIds.has(g.id) ? "Wait..." : "Complete"}</span>
+                                <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Complete"}</span>
                                 <CheckCircle2 className="h-4 w-4 md:hidden" />
                               </Button>
                             )}
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-primary shrink-0"
+                              className="h-8 w-8 md:h-9 md:w-9 text-primary shrink-0 rounded-full md:rounded-lg hover:bg-primary/5"
                               onClick={() => setPreviewGoal(g)}
                             >
                               <Eye className="h-4 w-4" />
@@ -896,7 +896,7 @@ function ClientDashboard() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-destructive shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                              className="h-8 w-8 md:h-9 md:w-9 text-destructive shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity rounded-full md:rounded-lg hover:bg-destructive/5"
                               onClick={() => setGoalToDelete(g.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1013,60 +1013,63 @@ function ClientDashboard() {
                 </div>
 
                 <div className="grid gap-3 md:gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2 overflow-x-auto w-full pb-4 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible">
-                    <div className="min-w-[450px] md:min-w-0 space-y-3 md:space-y-4">
-                      <AnimatePresence>
-                        {(foodEntries || []).map((entry) => (
+                  <div className="lg:col-span-2 w-full space-y-3 md:space-y-4">
+                    <AnimatePresence>
+                      {(foodEntries || []).map((entry) => (
                         <motion.div
                           key={entry.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-2.5 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                         >
-                          <div className="flex gap-3 md:gap-4 relative">
+                          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 relative">
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-8 w-8 text-destructive bg-background/80 backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10 rounded-full border border-border/50 shadow-sm"
+                              className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-7 w-7 md:h-8 md:w-8 text-destructive bg-background/80 backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10 rounded-full border border-border/50 shadow-sm"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setFoodToDelete(entry.id);
                               }}
                             >
-                              <Trash2 className="h-4 w-4" />
+                              <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
                             </Button>
-                            {entry.imageUrl ? (
-                              <div className="w-16 h-16 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm mt-1">
-                                <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                              </div>
-                            ) : (
-                              <div className="w-16 h-16 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed mt-1">
-                                <Utensils className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground/30" />
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0 flex flex-col justify-start py-0.5 pr-8">
-                              <h3 className="font-bold text-[14px] md:text-lg leading-tight break-words mb-1.5">{entry.foodName}</h3>
-                              <div className="flex flex-wrap gap-1.5 text-[9px] md:text-xs font-bold mb-2">
-                                <Badge variant="outline" className="text-[9px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
-                                  {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
-                                </Badge>
-                                <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
-                                  <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
-                                </span>
-                                <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[80px]">
-                                  {entry.portion || "Normal"}
-                                </span>
-                              </div>
-                              {entry.classification && (
-                                <div className={cn(
-                                  "w-fit px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
-                                  entry.classification === "HEALTHY" 
-                                    ? "bg-green-100 text-green-700" 
-                                    : "bg-red-100 text-red-700"
-                                )}>
-                                  {entry.classification === "HEALTHY" ? "Healthy" : "Limit"}
+                            
+                            <div className="flex gap-3 md:gap-4 items-start">
+                              {entry.imageUrl ? (
+                                <div className="w-20 h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                                  <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                                </div>
+                              ) : (
+                                <div className="w-20 h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
+                                  <Utensils className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/30" />
                                 </div>
                               )}
+                              
+                              <div className="flex-1 min-w-0 flex flex-col justify-start py-0.5">
+                                <h3 className="font-bold text-base md:text-lg leading-tight break-words mb-1.5 pr-6">{entry.foodName}</h3>
+                                <div className="flex flex-wrap gap-1.5 text-[10px] md:text-xs font-bold mb-2">
+                                  <Badge variant="outline" className="text-[9px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
+                                    {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
+                                  </Badge>
+                                  <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
+                                    <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
+                                  </span>
+                                  <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[100px]">
+                                    {entry.portion || "Normal"}
+                                  </span>
+                                </div>
+                                {entry.classification && (
+                                  <div className={cn(
+                                    "w-fit px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
+                                    entry.classification === "HEALTHY" 
+                                      ? "bg-green-100 text-green-700" 
+                                      : "bg-red-100 text-red-700"
+                                  )}>
+                                    {entry.classification === "HEALTHY" ? "Healthy" : "Limit"}
+                                  </div>
+                                )}
+                              </div>
                             </div>
                           </div>
 
