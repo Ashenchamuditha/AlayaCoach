@@ -993,7 +993,7 @@ function CoachDashboard() {
                                   </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <Badge variant="outline" className="text-[9px] font-bold">
+                                  <Badge variant="outline" className="text-[9px] font-bold shrink-0">
                                     {new Date(entry.entryTime).toLocaleDateString([], {
                                       month: "short",
                                       day: "numeric",
@@ -1002,26 +1002,26 @@ function CoachDashboard() {
                                   <Button
                                     size="icon"
                                     variant="ghost"
-                                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="h-8 w-8 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setFoodToDelete(entry.id);
                                     }}
                                   >
-                                    <Trash2 className="h-3.5 w-3.5" />
+                                    <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </div>
                               </div>
 
                               {entry.aiFeedback && (
-                                <div className="mb-3 rounded-lg bg-primary/5 p-2 md:p-2.5 border border-primary/10">
+                                <div className="mb-3 rounded-lg bg-primary/5 p-3 md:p-3.5 border border-primary/10">
                                   <div className="flex items-center gap-1.5 mb-1">
                                     <Sparkles className="h-3 w-3 text-primary" />
                                     <span className="text-[8px] font-bold uppercase tracking-wider text-primary">
                                       AI Insight
                                     </span>
                                   </div>
-                                  <p className="text-[11px] md:text-xs text-foreground/80 italic leading-relaxed">
+                                  <p className="text-[11px] md:text-xs text-foreground/80 italic leading-relaxed break-words whitespace-pre-wrap">
                                     "{entry.aiFeedback}"
                                   </p>
                                 </div>

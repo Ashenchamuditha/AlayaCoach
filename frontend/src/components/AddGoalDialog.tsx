@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import { z } from "zod";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,12 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     targetUnit: "",
   });
 
+  useEffect(() => {
+    if (clientId) {
+      setForm((prev) => ({ ...prev, clientId }));
+    }
+  }, [clientId]);
+
   const updateTime = (field: "startTime" | "endTime", value: string) => {
     const newForm = { ...form, [field]: value };
 
@@ -128,7 +134,7 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     setErrors({});
     setSubmitting(true);
     try {
-      const payload = { ...form, endDate: form.dueDate };
+      const payload = { ...form, clientId: clientId || form.clientId, endDate: form.dueDate };
       const { data } = await api.post("/goals", payload);
 
       onAdd({
@@ -141,7 +147,7 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
       reset();
     } catch (err) {
       console.error("Add goal error:", err);
-      toast.error("Failed to add goal");
+      toast.error("Failed to add goal. Please try again.");
     } finally {
       setSubmitting(false);
     }

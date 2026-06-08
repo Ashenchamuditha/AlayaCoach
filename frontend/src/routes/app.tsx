@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
@@ -24,6 +24,7 @@ import {
   Utensils,
   ChevronRight,
   Users,
+  RefreshCw,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -284,8 +285,28 @@ function ClientDashboard() {
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
+
+  useEffect(() => {
+    if (dailyTips.length <= 1) return;
+    console.log("Setting up Daily Insights auto-scroll");
+    
+    const scrollInterval = setInterval(() => {
+      if (carouselRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = carouselRef.current;
+        // If reached the end (with a 20px buffer), scroll back to start
+        if (scrollLeft + clientWidth >= scrollWidth - 20) {
+          carouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+          carouselRef.current.scrollBy({ left: clientWidth, behavior: 'smooth' });
+        }
+      }
+    }, 3000);
+
+    return () => clearInterval(scrollInterval);
+  }, [dailyTips]);
 
   const fetchDashboard = () => {
     api
@@ -803,19 +824,19 @@ function ClientDashboard() {
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
                           className={cn(
-                            "flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border p-3 transition hover:bg-muted/50",
+                            "flex items-center justify-between gap-2 rounded-lg border border-border p-3 transition hover:bg-muted/50",
                             g.createdByCoach && "bg-amber-50/30 border-amber-100"
                           )}
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               <p
-                                className={`text-sm font-medium truncate ${g.done ? "text-muted-foreground line-through" : ""}`}
+                                className={`text-sm font-medium truncate min-w-0 ${g.done ? "text-muted-foreground line-through" : ""}`}
                               >
                                 {g.title}
                               </p>
                               {g.createdByCoach && (
-                                <Badge variant="outline" className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter">
+                                <Badge variant="outline" className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter shrink-0">
                                   Coach
                                 </Badge>
                               )}
@@ -839,31 +860,35 @@ function ClientDashboard() {
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-0.5 md:gap-1 shrink-0">
                             {g.done ? (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-8 text-[10px] px-3 text-amber-600 border-amber-200"
+                                className="h-8 w-8 md:w-auto text-[10px] p-0 md:px-3 text-amber-600 border-amber-200 rounded-full md:rounded-md flex items-center justify-center shrink-0"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
+                                title="Re-activate"
                               >
-                                {togglingIds.has(g.id) ? "Wait..." : "Re-activate"}
+                                <span className="hidden md:inline">{togglingIds.has(g.id) ? "Wait..." : "Re-activate"}</span>
+                                <RefreshCw className={cn("h-4 w-4 md:hidden", togglingIds.has(g.id) && "animate-spin")} />
                               </Button>
                             ) : (
                               <Button
                                 size="sm"
-                                className="h-8 text-[10px] px-3 bg-green-600 hover:bg-green-700 text-white"
+                                className="h-8 w-8 md:w-auto text-[10px] p-0 md:px-3 bg-green-600 hover:bg-green-700 text-white rounded-full md:rounded-md flex items-center justify-center shrink-0"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
+                                title="Complete"
                               >
-                                {togglingIds.has(g.id) ? "Wait..." : "Complete"}
+                                <span className="hidden md:inline">{togglingIds.has(g.id) ? "Wait..." : "Complete"}</span>
+                                <CheckCircle2 className="h-4 w-4 md:hidden" />
                               </Button>
                             )}
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-primary"
+                              className="h-8 w-8 text-primary shrink-0"
                               onClick={() => setPreviewGoal(g)}
                             >
                               <Eye className="h-4 w-4" />
@@ -871,7 +896,7 @@ function ClientDashboard() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-8 w-8 text-destructive"
+                              className="h-8 w-8 text-destructive shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                               onClick={() => setGoalToDelete(g.id)}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -955,16 +980,17 @@ function ClientDashboard() {
                 <div className="flex items-center justify-between px-1">
                   <h3 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 italic">Daily AI Insights</h3>
                   <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className={cn("h-6 w-6 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                    variant="outline" 
+                    size="sm" 
+                    className={cn("h-7 px-2.5 text-[10px] font-bold text-primary bg-primary/5 rounded-full border-primary/20", isRefreshingTips && "opacity-50 cursor-not-allowed")}
                     onClick={refreshTips}
                     disabled={isRefreshingTips}
                   >
-                    <Sparkles className="h-3 w-3" />
+                    <RefreshCw className={cn("h-3 w-3 mr-1.5", isRefreshingTips && "animate-spin")} />
+                    Refresh
                   </Button>
                 </div>
-                <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar snap-x">
+                <div ref={carouselRef} className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar snap-x touch-pan-x">
                   {dailyTips.length > 0 ? (
                     dailyTips.map((tip) => (
                       <div key={tip.id} className="flex gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 min-w-[88%] snap-center shadow-sm">
@@ -987,59 +1013,53 @@ function ClientDashboard() {
                 </div>
 
                 <div className="grid gap-3 md:gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2 space-y-3 md:space-y-4">
-                    <AnimatePresence>
-                      {(foodEntries || []).map((entry) => (
+                  <div className="lg:col-span-2 overflow-x-auto w-full pb-4 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 md:overflow-visible">
+                    <div className="min-w-[450px] md:min-w-0 space-y-3 md:space-y-4">
+                      <AnimatePresence>
+                        {(foodEntries || []).map((entry) => (
                         <motion.div
                           key={entry.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-2.5 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden"
+                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-2.5 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                         >
-                          <div className="flex gap-2.5 md:gap-4">
+                          <div className="flex gap-3 md:gap-4 relative">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-8 w-8 text-destructive bg-background/80 backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10 rounded-full border border-border/50 shadow-sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setFoodToDelete(entry.id);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
                             {entry.imageUrl ? (
-                              <div className="w-14 h-14 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                              <div className="w-16 h-16 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm mt-1">
                                 <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                               </div>
                             ) : (
-                              <div className="w-14 h-14 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
-                                <Utensils className="h-5 w-5 md:h-8 md:w-8 text-muted-foreground/30" />
+                              <div className="w-16 h-16 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed mt-1">
+                                <Utensils className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground/30" />
                               </div>
                             )}
-                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                              <div>
-                                <div className="flex items-start justify-between gap-1.5">
-                                  <h3 className="font-bold text-[11px] md:text-lg truncate leading-tight">{entry.foodName}</h3>
-                                  <div className="flex items-center gap-1">
-                                    <Badge variant="outline" className="text-[7px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none px-1 h-3 md:h-4">
-                                      {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
-                                    </Badge>
-                                    <Button
-                                      size="icon"
-                                      variant="ghost"
-                                      className="h-4 w-4 md:h-6 md:w-6 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setFoodToDelete(entry.id);
-                                      }}
-                                    >
-                                      <Trash2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
-                                    </Button>
-                                  </div>
-                                </div>
-                                <div className="mt-0.5 flex flex-wrap gap-1 text-[8px] md:text-xs font-bold">
-                                  <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1 py-0.5 rounded-full shrink-0">
-                                    <Flame className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.calories || 0} kcal
-                                  </span>
-                                  <span className="text-muted-foreground bg-muted/50 px-1 py-0.5 rounded-full truncate max-w-[70px]">
-                                    {entry.portion || "Normal"}
-                                  </span>
-                                </div>
+                            <div className="flex-1 min-w-0 flex flex-col justify-start py-0.5 pr-8">
+                              <h3 className="font-bold text-[14px] md:text-lg leading-tight break-words mb-1.5">{entry.foodName}</h3>
+                              <div className="flex flex-wrap gap-1.5 text-[9px] md:text-xs font-bold mb-2">
+                                <Badge variant="outline" className="text-[9px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
+                                  {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
+                                </Badge>
+                                <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
+                                  <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
+                                </span>
+                                <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[80px]">
+                                  {entry.portion || "Normal"}
+                                </span>
                               </div>
-
                               {entry.classification && (
                                 <div className={cn(
-                                  "mt-1 w-fit px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold uppercase tracking-widest",
+                                  "w-fit px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
                                   entry.classification === "HEALTHY" 
                                     ? "bg-green-100 text-green-700" 
                                     : "bg-red-100 text-red-700"
@@ -1051,13 +1071,13 @@ function ClientDashboard() {
                           </div>
 
                           {entry.aiFeedback && (
-                            <div className="mt-2.5 relative rounded-lg md:rounded-xl bg-primary/[0.03] p-2 md:p-4 border border-primary/10 overflow-hidden">
+                            <div className="mt-2.5 relative rounded-lg md:rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10">
                               <div className="absolute top-0 left-0 w-0.5 h-full bg-primary/20" />
                               <div className="flex gap-1 mb-1">
                                 <Sparkles className="h-2 w-2 text-primary" />
                                 <span className="text-[7px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
                               </div>
-                              <p className="text-[10px] md:text-sm text-foreground/80 leading-relaxed italic break-words">
+                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed italic break-words whitespace-pre-wrap w-full">
                                 "{entry.aiFeedback}"
                               </p>
                               {entry.chatStarter && (
@@ -1065,11 +1085,11 @@ function ClientDashboard() {
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="h-5 max-w-full text-[8px] md:text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-md border border-primary/20 px-1.5"
+                                    className="h-auto py-1 max-w-full text-[9px] md:text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-md border border-primary/20 px-2"
                                     onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
                                   >
-                                    <span className="truncate">Ask: {entry.chatStarter}</span>
-                                    <ChevronRight className="h-2 w-2 shrink-0" />
+                                    <span className="whitespace-normal text-left">Ask: {entry.chatStarter}</span>
+                                    <ChevronRight className="h-3 w-3 shrink-0" />
                                   </Button>
                                 </div>
                               )}
@@ -1077,13 +1097,13 @@ function ClientDashboard() {
                           )}
 
                           {entry.coachFeedback && (
-                            <div className="mt-2 relative rounded-lg md:rounded-xl bg-amber-50/50 p-2 md:p-4 border border-amber-200/50 overflow-hidden">
+                            <div className="mt-2 relative rounded-lg md:rounded-xl bg-amber-50/50 p-3 md:p-4 border border-amber-200/50">
                               <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-400/40" />
                               <div className="flex gap-1 mb-1">
                                 <Users className="h-2 w-2 text-amber-600" />
                                 <span className="text-[7px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
                               </div>
-                              <p className="text-[10px] md:text-sm text-foreground/80 leading-relaxed break-words font-medium">
+                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed font-medium break-words whitespace-pre-wrap w-full">
                                 {entry.coachFeedback}
                               </p>
                             </div>
@@ -1101,6 +1121,7 @@ function ClientDashboard() {
                         <p className="text-[8px] text-muted-foreground/60 max-w-[130px] mt-1">Get AI insights on your nutrition goals.</p>
                       </div>
                     )}
+                    </div>
                   </div>
                   
                   {/* Desktop AI Tips - Styled consistently */}

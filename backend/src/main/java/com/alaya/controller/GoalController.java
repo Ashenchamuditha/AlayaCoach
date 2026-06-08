@@ -74,7 +74,11 @@ public class GoalController {
 
         // Auto-log a checkin for the new goal to get initial AI feedback
         if (user.getRole() == Role.CLIENT) {
-            checkinService.logCheckin(user.getId(), goal.getId(), "Started a new goal: " + goal.getTitle(), false);
+            try {
+                checkinService.logCheckin(user.getId(), goal.getId(), "Started a new goal: " + goal.getTitle(), false);
+            } catch (Exception e) {
+                System.err.println("Failed to log initial checkin for new goal: " + e.getMessage());
+            }
         }
 
         return ResponseEntity.ok(goal);
