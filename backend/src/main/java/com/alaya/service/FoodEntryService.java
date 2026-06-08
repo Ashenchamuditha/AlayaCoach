@@ -159,4 +159,12 @@ public class FoodEntryService {
 
         return saved;
     }
+
+    public FoodEntry deleteCoachFeedback(Long entryId) {
+        FoodEntry entry = foodEntryRepository.findById(entryId)
+                .orElseThrow(() -> new RuntimeException("Food entry not found"));
+        entry.setCoachFeedback(null);
+        entry.setUpdatedAt(LocalDateTime.now());
+        return foodEntryRepository.save(entry);
+    }
 }

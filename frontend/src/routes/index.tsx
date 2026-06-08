@@ -64,10 +64,10 @@ function LandingPage() {
   const { user, hydrate } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState<PublicStats>({
-    activeUsers: 12480,
-    coaches: 312,
-    goalsCompleted: 184230,
-    messagesExchanged: 982451,
+    activeUsers: 0,
+    coaches: 0,
+    goalsCompleted: 0,
+    messagesExchanged: 0,
   });
 
   useEffect(() => {
@@ -108,7 +108,7 @@ function LandingPage() {
             >
               <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-background/50 px-4 py-1.5 text-xs font-medium backdrop-blur">
                 <Sparkles className="h-3.5 w-3.5 text-primary" />
-                Trusted by 12,000+ ambitious humans
+                Trusted by {(stats.activeUsers ?? 0).toLocaleString()}+ ambitious humans
               </div>
               <h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
                 <span className="text-gradient-brand flex items-center justify-center gap-3">

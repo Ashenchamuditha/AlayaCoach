@@ -389,6 +389,18 @@ function CoachDashboard() {
     }
   };
 
+  const deleteFoodFeedback = async (entryId: number) => {
+    try {
+      await api.delete(`/food/${entryId}/feedback`);
+      setSelectedFoodEntries((prev) =>
+        prev.map((e) => (e.id === entryId ? { ...e, coachFeedback: undefined } : e)),
+      );
+      toast.success("Feedback deleted");
+    } catch {
+      toast.error("Failed to delete feedback");
+    }
+  };
+
   const submitGoalFeedback = async (goalId: string, feedback: string) => {
     try {
       await api.post(`/goals/${goalId}/feedback`, { feedback });
@@ -779,7 +791,7 @@ function CoachDashboard() {
                       </Card>
                     ) : (
                       selectedFoodEntries.map((entry) => (
-                        <Card key={entry.id} className="p-4 md:p-5 border-border/50 hover:border-primary/20 transition-colors">
+                        <Card key={entry.id} className="group p-4 md:p-5 border-border/50 hover:border-primary/20 transition-colors">
                           <div className="flex gap-4">
                             {entry.imageUrl && (
                               <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted border border-border">
@@ -854,17 +866,31 @@ function CoachDashboard() {
                             {entry.coachFeedback ? (
                               <div className="rounded-lg bg-amber-50 p-2.5 border border-amber-100 text-xs text-foreground/80 flex items-start justify-between gap-2">
                                 <p className="leading-relaxed">{entry.coachFeedback}</p>
-                                <Button
-                                  variant="link"
-                                  size="sm"
-                                  className="h-auto p-0 text-[10px] text-amber-700 underline shrink-0"
-                                  onClick={() => {
-                                    const next = prompt("Edit feedback:", entry.coachFeedback);
-                                    if (next !== null) submitFoodFeedback(entry.id, next);
-                                  }}
-                                >
-                                  Edit
-                                </Button>
+                                <div className="flex items-center gap-2 shrink-0">
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto p-0 text-[10px] text-amber-700 underline"
+                                    onClick={() => {
+                                      const next = prompt("Edit feedback:", entry.coachFeedback);
+                                      if (next !== null) submitFoodFeedback(entry.id, next);
+                                    }}
+                                  >
+                                    Edit
+                                  </Button>
+                                  <Button
+                                    variant="link"
+                                    size="sm"
+                                    className="h-auto p-0 text-[10px] text-destructive underline"
+                                    onClick={() => {
+                                      if (confirm("Delete this feedback?")) {
+                                        deleteFoodFeedback(entry.id);
+                                      }
+                                    }}
+                                  >
+                                    Delete
+                                  </Button>
+                                </div>
                               </div>
                             ) : (
                               <div className="flex gap-2">

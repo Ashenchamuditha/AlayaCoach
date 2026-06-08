@@ -73,6 +73,12 @@ public class FoodEntryController {
         return ResponseEntity.ok(foodEntryService.addCoachFeedback(id, req.getFeedback()));
     }
 
+    @DeleteMapping("/{id}/feedback")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<FoodEntry> deleteCoachFeedback(@PathVariable Long id) {
+        return ResponseEntity.ok(foodEntryService.deleteCoachFeedback(id));
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('CLIENT', 'COACH')")
     public ResponseEntity<Void> deleteFoodEntry(@PathVariable Long id,

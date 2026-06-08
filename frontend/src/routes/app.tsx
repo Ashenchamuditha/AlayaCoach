@@ -734,17 +734,17 @@ function ClientDashboard() {
           {activeTab === "nutrition" && (
             <div className="space-y-6">
               {/* Daily Summary Card */}
-              <Card className="overflow-hidden border-none bg-gradient-brand text-white shadow-lg">
+              <Card className="overflow-hidden border-none rounded-3xl bg-gradient-brand text-white shadow-lg">
                 <div className="p-5 md:p-8">
                   <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="text-xs font-bold uppercase tracking-wider opacity-80">Today's Intake</p>
-                      <h2 className="text-3xl md:text-4xl font-extrabold mt-1">
+                    <div className="min-w-0">
+                      <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-80">Today's Intake</p>
+                      <h2 className="text-3xl md:text-4xl font-extrabold mt-1 truncate">
                         {todayCalories}
                         <span className="ml-1.5 text-sm md:text-lg font-medium opacity-80">kcal</span>
                       </h2>
                     </div>
-                    <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                    <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
                       <Flame className="h-6 w-6 text-white" />
                     </div>
                   </div>
@@ -766,118 +766,165 @@ function ClientDashboard() {
                 </div>
               </Card>
 
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold tracking-tight">Food Log</h2>
-                <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
-              </div>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold tracking-tight">Food Log</h2>
+                  <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
+                </div>
 
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2 space-y-4">
-                  <AnimatePresence>
-                    {(foodEntries || []).map((entry) => (
-                      <motion.div
-                        key={entry.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="group relative rounded-2xl border border-border/40 bg-card p-3 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
-                      >
-                        <div className="flex gap-4">
-                          {entry.imageUrl ? (
-                            <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
-                              <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
-                            </div>
-                          ) : (
-                            <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
-                              <Utensils className="h-8 w-8 text-muted-foreground/30" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-start justify-between gap-2">
-                                <h3 className="font-bold text-base md:text-lg truncate leading-tight">{entry.foodName}</h3>
-                                <div className="flex items-center gap-2">
-                                  <Badge variant="outline" className="text-[9px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none">
-                                    {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
-                                  </Badge>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setFoodToDelete(entry.id);
-                                    }}
-                                  >
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </Button>
+                <div className="grid gap-6 lg:grid-cols-3">
+                  <div className="lg:col-span-2 space-y-4">
+                    <AnimatePresence>
+                      {(foodEntries || []).map((entry) => (
+                        <motion.div
+                          key={entry.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="group relative rounded-2xl border border-border/40 bg-card p-4 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden"
+                        >
+                          <div className="flex gap-3 md:gap-4">
+                            {entry.imageUrl ? (
+                              <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                                <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                              </div>
+                            ) : (
+                              <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
+                                <Utensils className="h-8 w-8 text-muted-foreground/30" />
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
+                              <div>
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="font-bold text-sm md:text-lg truncate leading-tight">{entry.foodName}</h3>
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant="outline" className="text-[8px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none px-1.5 h-4">
+                                      {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
+                                    </Badge>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFoodToDelete(entry.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[9px] md:text-xs font-bold">
+                                  <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full shrink-0">
+                                    <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
+                                  </span>
+                                  <span className="text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full truncate max-w-[100px]">
+                                    {entry.portion || "Normal"}
+                                  </span>
                                 </div>
                               </div>
-                              <div className="mt-1 flex flex-wrap gap-2 text-[10px] md:text-xs font-bold">
-                                <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                                  <Flame className="h-3 w-3" /> {entry.calories || 0} kcal
-                                </span>
-                                <span className="text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
-                                  {entry.portion || "Normal portion"}
-                                </span>
-                              </div>
-                            </div>
 
-                            {entry.classification && (
-                              <div className={cn(
-                                "mt-2 w-fit px-2 py-0.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
-                                entry.classification === "HEALTHY" 
-                                  ? "bg-green-100 text-green-700" 
-                                  : "bg-red-100 text-red-700"
-                              )}>
-                                {entry.classification === "HEALTHY" ? "Healthy choice" : "Harmful if frequent"}
-                              </div>
-                            )}
+                              {entry.classification && (
+                                <div className={cn(
+                                  "mt-2 w-fit px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
+                                  entry.classification === "HEALTHY" 
+                                    ? "bg-green-100 text-green-700" 
+                                    : "bg-red-100 text-red-700"
+                                )}>
+                                  {entry.classification === "HEALTHY" ? "Healthy" : "Limit"}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        {entry.aiFeedback && (
-                          <div className="mt-4 relative rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10 overflow-hidden">
-                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                            <div className="flex gap-2 mb-2">
-                              <Sparkles className="h-3.5 w-3.5 text-primary" />
-                              <span className="text-[9px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
-                            </div>
-                            <p className="text-xs md:text-sm text-foreground/80 leading-relaxed italic">
-                              "{entry.aiFeedback}"
-                            </p>
-                            {entry.chatStarter && (
-                              <div className="mt-3 flex justify-end">
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
-                                  className="h-8 text-[11px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-lg border border-primary/20"
-                                  onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
-                                >
-                                  Ask: {entry.chatStarter}
-                                  <ChevronRight className="h-3 w-3" />
-                                </Button>
+                          {entry.aiFeedback && (
+                            <div className="mt-4 relative rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10 overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                              <div className="flex gap-2 mb-2">
+                                <Sparkles className="h-3 w-3 text-primary" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
                               </div>
-                            )}
+                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed italic break-words">
+                                "{entry.aiFeedback}"
+                              </p>
+                              {entry.chatStarter && (
+                                <div className="mt-3 flex justify-end">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm" 
+                                    className="h-7 max-w-full text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-lg border border-primary/20"
+                                    onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
+                                  >
+                                    <span className="truncate">Ask: {entry.chatStarter}</span>
+                                    <ChevronRight className="h-3 w-3 shrink-0" />
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {entry.coachFeedback && (
+                            <div className="mt-3 relative rounded-xl bg-amber-50/50 p-3 md:p-4 border border-amber-200/50 overflow-hidden">
+                              <div className="absolute top-0 left-0 w-1 h-full bg-amber-400/40" />
+                              <div className="flex gap-2 mb-2">
+                                <Users className="h-3 w-3 text-amber-600" />
+                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
+                              </div>
+                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed break-words font-medium">
+                                {entry.coachFeedback}
+                              </p>
+                            </div>
+                          )}
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                    
+                    {(!foodEntries || foodEntries.length === 0) && (
+                      <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/10 rounded-3xl border-2 border-dashed border-muted-foreground/10 mx-2">
+                        <div className="h-14 w-14 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+                          <Utensils className="h-7 w-7 text-muted-foreground opacity-30" />
+                        </div>
+                        <h3 className="text-lg font-bold text-muted-foreground">Log your first meal</h3>
+                        <p className="text-[10px] text-muted-foreground/60 max-w-[180px] mt-1">Get AI insights on your nutrition goals.</p>
+                      </div>
+                    )}
+
+                    {/* Mobile-only AI Tips - Re-styled for better appeal */}
+                    <div className="lg:hidden mt-8">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                          onClick={refreshTips}
+                          disabled={isRefreshingTips}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-3">
+                        {dailyTips.length > 0 ? (
+                          dailyTips.map((tip) => (
+                            <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
+                              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                              </div>
+                              <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-10 text-center border rounded-2xl border-dashed">
+                            <p className="text-xs text-muted-foreground italic">AI is crafting your tips...</p>
                           </div>
                         )}
-                      </motion.div>
-                    ))}
-                  </AnimatePresence>
-                  
-                  {(!foodEntries || foodEntries.length === 0) && (
-                    <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-3xl border-2 border-dashed border-muted-foreground/10">
-                      <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                        <Utensils className="h-8 w-8 text-muted-foreground opacity-30" />
                       </div>
-                      <h3 className="text-lg font-bold text-muted-foreground">Log your first meal</h3>
-                      <p className="text-xs text-muted-foreground/60 max-w-[200px] mt-1">Get AI insights on your nutrition and health goals.</p>
                     </div>
-                  )}
-
-                  {/* Mobile-only AI Tips - Re-styled for better appeal */}
-                  <div className="lg:hidden mt-8">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">AI Daily Insights</h3>
+                  </div>
+                  
+                  {/* Desktop AI Tips - Styled consistently */}
+                  <div className="hidden lg:block space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
                       <Button 
                         variant="ghost" 
                         size="icon" 
@@ -891,7 +938,7 @@ function ClientDashboard() {
                     <div className="grid gap-3">
                       {dailyTips.length > 0 ? (
                         dailyTips.map((tip) => (
-                          <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
+                          <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
                             <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                               <Sparkles className="h-4 w-4 text-primary" />
                             </div>
@@ -900,42 +947,10 @@ function ClientDashboard() {
                         ))
                       ) : (
                         <div className="py-10 text-center border rounded-2xl border-dashed">
-                          <p className="text-xs text-muted-foreground italic">AI is crafting your tips...</p>
+                          <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-                
-                {/* Desktop AI Tips - Styled consistently */}
-                <div className="hidden lg:block space-y-4">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
-                      onClick={refreshTips}
-                      disabled={isRefreshingTips}
-                    >
-                      <Sparkles className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div className="grid gap-3">
-                    {dailyTips.length > 0 ? (
-                      dailyTips.map((tip) => (
-                        <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
-                          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                            <Sparkles className="h-4 w-4 text-primary" />
-                          </div>
-                          <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="py-10 text-center border rounded-2xl border-dashed">
-                        <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
