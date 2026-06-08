@@ -8,6 +8,7 @@ import {
   Edit2,
   Eye,
   MessageCircle,
+  RotateCcw,
   Trash2,
   TrendingUp,
   Users,
@@ -56,6 +57,7 @@ import { api, getMediaUrl } from "@/lib/api";
 import { createChatClient } from "@/lib/ws";
 import { useAuth } from "@/store/auth";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/coach")({
   head: () => ({
@@ -111,6 +113,15 @@ interface FoodEntry {
   aiFeedback?: string;
   coachFeedback?: string;
   imageUrl?: string;
+}
+
+interface WeeklyReport {
+  id: number;
+  startDate: string;
+  endDate: string;
+  clientSummary: string;
+  coachBrief: string;
+  createdAt: string;
 }
 
 function GoalPreviewDialog({
@@ -349,7 +360,6 @@ function CoachDashboard() {
       (update) => {
         if (
           update.type === "GOAL_UPDATE" ||
-          update.type === "GOAL_UPDATED" ||
           update.type === "GOAL_DELETED" ||
           update.type === "NEW_NOTIFICATION"
         ) {
@@ -809,6 +819,14 @@ function CoachDashboard() {
                               >
                                 {g.title}
                               </h3>
+                              {g.createdByCoach && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter shrink-0"
+                                >
+                                  Coach Added
+                                </Badge>
+                              )}
                               {!g.createdByCoach && (
                                 <Badge
                                   variant="outline"
@@ -835,6 +853,17 @@ function CoachDashboard() {
 
                           <div className="mt-4 pt-4 border-t border-border/50 flex items-center justify-between">
                             <div className="flex flex-col gap-0.5 min-w-0">
+                              {g.createdAt && (
+                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                                  <Clock className="h-2.5 w-2.5 shrink-0" />
+                                  {new Date(g.createdAt).toLocaleString([], {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              )}
                               {g.dueDate && (
                                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground truncate">
                                   <Calendar className="h-2.5 w-2.5 shrink-0" />
@@ -844,12 +873,6 @@ function CoachDashboard() {
                                   })}
                                 </div>
                               )}
-                              {g.startTime && (
-                                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                                  <Clock className="h-2.5 w-2.5 shrink-0" />
-                                  {g.startTime}
-                                </div>
-                              )}
                             </div>
 
                             <div className="flex items-center gap-0.5 shrink-0">
@@ -857,9 +880,18 @@ function CoachDashboard() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-7 w-7 text-primary hover:bg-primary/5"
-                                onClick={() => {
+                                onClick={async () => {
                                   setPreviewGoal(g);
                                   setPreviewDialogOpen(true);
+                                  if (!g.coachViewed) {
+                                    try {
+                                      await api.patch(`/goals/${g.id}/viewed`);
+                                      setSelectedGoals(prev => prev.map(item => item.id === g.id ? { ...item, coachViewed: true } : item));
+                                      fetchClients();
+                                    } catch (e) {
+                                      console.error("Failed to mark as viewed", e);
+                                    }
+                                  }
                                 }}
                                 title="View Details"
                               >
@@ -877,6 +909,26 @@ function CoachDashboard() {
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </Button>
+                              {g.deletedByClient && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7 text-green-600 hover:text-green-700 hover:bg-green-50"
+                                  onClick={async () => {
+                                    try {
+                                      await api.patch(`/goals/${g.id}/restore`);
+                                      setSelectedGoals(prev => prev.map(item => item.id === g.id ? { ...item, deletedByClient: false } : item));
+                                      toast.success("Goal restored at user side");
+                                      fetchClients();
+                                    } catch (e) {
+                                      toast.error("Failed to restore goal");
+                                    }
+                                  }}
+                                  title="Restore Goal"
+                                >
+                                  <RotateCcw className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
                               <Button
                                 variant="ghost"
                                 size="icon"

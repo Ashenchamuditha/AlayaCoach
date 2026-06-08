@@ -185,8 +185,27 @@ public class GoalService {
         } catch (Exception e) {}
     }
 
+    public Goal restoreGoal(Long goalId, Long coachId) {
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new IllegalArgumentException("Goal not found"));
+        
+        if (!goal.getCoachId().equals(coachId)) {
+            throw new AccessDeniedException("Not authorized to restore this goal");
+        }
+        
+        goal.setDeletedByClient(false);
+        goal.setUpdatedAt(LocalDateTime.now());
+        Goal saved = goalRepository.save(goal);
+        notifyUpdate(saved);
+        return saved;
+    }
+
     public List<Goal> getGoalsForClient(Long clientId) {
         return goalRepository.findAllByClientIdAndDeletedByClientFalseOrderByCreatedAtDesc(clientId);
+    }
+
+    public List<Goal> getGoalsForClientForCoach(Long clientId) {
+        return goalRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
     }
 
     public List<Goal> getGoalsForCoach(Long coachId) {

@@ -207,12 +207,12 @@ public class AIService {
         String systemPrompt = "You are a professional accountability coach and data analyst. " +
                 "Analyze the provided weekly data for a client (goals, food logs, check-ins). " +
                 "Generate two summaries:\n" +
-                "1. 'clientSummary': An encouraging, actionable summary for the client. Mention specific achievements and areas for improvement. Max 4 sentences.\n" +
+                "1. 'clientSummary': A detailed, encouraging report describing the user's activities over the week. Include specific observations about their habits, followed by actionable ideas and concrete suggestions for the upcoming week to improve their progress. Max 8-10 sentences.\n" +
                 "2. 'coachBrief': A high-level brief for the coach. Highlight if the client is struggling, why, and where the coach should focus. Max 3 sentences.\n" +
                 "Respond ONLY with a JSON object: {\"clientSummary\": \"...\", \"coachBrief\": \"...\"}";
 
         String res = callGroqAI(systemPrompt, "Weekly Data Context: " + userData);
-        return res != null ? res : "{\"clientSummary\": \"Great work this week! Keep it up.\", \"coachBrief\": \"Client is making steady progress.\"}";
+        return res != null ? res : "{\"clientSummary\": \"Great work this week! Keep tracking your progress to get more insights.\", \"coachBrief\": \"Client is making steady progress.\"}";
     }
 
     private String callGroqAI(String systemPrompt, String userMessage) {

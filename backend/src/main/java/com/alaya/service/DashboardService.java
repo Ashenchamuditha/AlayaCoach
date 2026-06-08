@@ -67,7 +67,7 @@ public class DashboardService {
         User client = userRepository.findById(clientId)
                 .orElseThrow(() -> new IllegalArgumentException("Client not found"));
         
-        List<Goal> goals = goalRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
+        List<Goal> goals = goalRepository.findAllByClientIdAndDeletedByClientFalseOrderByCreatedAtDesc(clientId);
         var recentCheckins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(clientId);
         
         String coachName = "No coach assigned";
@@ -121,6 +121,9 @@ public class DashboardService {
             map.put("createdAt", g.getCreatedAt());
             map.put("updatedAt", g.getUpdatedAt());
             map.put("coachFeedback", g.getCoachFeedback());
+            map.put("createdByCoach", g.isCreatedByCoach());
+            map.put("coachViewed", g.isCoachViewed());
+            map.put("deletedByClient", g.isDeletedByClient());
             return map;
         }).toList());
         response.put("aiFeedback", recentCheckins.isEmpty() ? "Welcome! Start by completing your first goal to get AI feedback." : recentCheckins.get(0).getAiFeedback() != null ? recentCheckins.get(0).getAiFeedback() : "Good job! Keep it up.");

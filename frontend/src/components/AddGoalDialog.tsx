@@ -131,17 +131,16 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
       const payload = { ...form, endDate: form.dueDate };
       const { data } = await api.post("/goals", payload);
 
-      toast.success("Successfully goal is added");
-
       onAdd({
         ...payload,
         id: String(data.id),
       });
 
+      toast.success("Successfully goal is added");
       setOpen(false);
       reset();
     } catch (err) {
-      console.error(err);
+      console.error("Add goal error:", err);
       toast.error("Failed to add goal");
     } finally {
       setSubmitting(false);

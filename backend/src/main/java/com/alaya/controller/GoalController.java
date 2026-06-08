@@ -130,7 +130,7 @@ public class GoalController {
     @GetMapping("/client/{clientId}")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<List<Goal>> getClientGoals(@PathVariable Long clientId) {
-        return ResponseEntity.ok(goalService.getGoalsForClient(clientId));
+        return ResponseEntity.ok(goalService.getGoalsForClientForCoach(clientId));
     }
 
     @PatchMapping("/{goalId}/complete")
@@ -145,6 +145,13 @@ public class GoalController {
     public ResponseEntity<Goal> markAsViewed(@PathVariable Long goalId,
                                              @AuthenticationPrincipal User coach) {
         return ResponseEntity.ok(goalService.markAsViewed(goalId, coach.getId()));
+    }
+
+    @PatchMapping("/{goalId}/restore")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Goal> restoreGoal(@PathVariable Long goalId,
+                                            @AuthenticationPrincipal User coach) {
+        return ResponseEntity.ok(goalService.restoreGoal(goalId, coach.getId()));
     }
 
     @PostMapping("/{goalId}/feedback")
