@@ -930,7 +930,7 @@ function CoachDashboard() {
                 </Card>
               </>
             ) : (
-              <div className="mx-auto max-w-3xl">
+              <div className="mx-auto max-w-4xl w-full -mx-4 md:mx-auto h-[calc(100dvh-130px)] md:h-[750px] flex flex-col">
                 <ChatInterface peerId={selected.id} peerName={selected.name} />
               </div>
             )}

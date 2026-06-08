@@ -48,11 +48,11 @@ export function StopwatchTimer() {
         <h2 className="text-lg font-semibold">Focus stopwatch</h2>
       </div>
       <div className="flex items-center justify-center py-4">
-        <div className="font-mono text-5xl font-bold tabular-nums tracking-tight">
+        <div className="font-mono text-3xl xs:text-4xl md:text-5xl font-bold tabular-nums tracking-tight">
           <span className="text-gradient-brand">
             {t.h}:{t.m}:{t.s}
           </span>
-          <span className="ml-1 text-2xl text-muted-foreground">.{t.cs}</span>
+          <span className="ml-1 text-xl xs:text-2xl text-muted-foreground">.{t.cs}</span>
         </div>
       </div>
       <div className="mt-4 flex justify-center gap-2">

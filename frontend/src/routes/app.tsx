@@ -525,7 +525,7 @@ function ClientDashboard() {
 
           {activeTab === "overview" && (
             <div className="space-y-6">
-              <div className="grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
+              <div className="grid gap-3 md:gap-4 grid-cols-1 xs:grid-cols-2 lg:grid-cols-4">
                 <Card className="p-3 md:p-6">
                   <div className="flex items-center gap-2 md:gap-3">
                     <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
@@ -645,7 +645,7 @@ function ClientDashboard() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 text-amber-600 border-amber-200"
+                                className="h-8 text-[10px] px-3 text-amber-600 border-amber-200"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
                               >
@@ -654,7 +654,7 @@ function ClientDashboard() {
                             ) : (
                               <Button
                                 size="sm"
-                                className="h-7 md:h-8 text-[9px] md:text-[10px] px-2.5 bg-green-600 hover:bg-green-700 text-white"
+                                className="h-8 text-[10px] px-3 bg-green-600 hover:bg-green-700 text-white"
                                 onClick={() => toggle(g.id)}
                                 disabled={togglingIds.has(g.id)}
                               >
@@ -664,18 +664,18 @@ function ClientDashboard() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7 md:h-8 md:w-8 text-primary"
+                              className="h-8 w-8 text-primary"
                               onClick={() => setPreviewGoal(g)}
                             >
-                              <Eye className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              <Eye className="h-4 w-4" />
                             </Button>
                             <Button
                               size="icon"
                               variant="ghost"
-                              className="h-7 w-7 md:h-8 md:w-8 text-destructive"
+                              className="h-8 w-8 text-destructive"
                               onClick={() => setGoalToDelete(g.id)}
                             >
-                              <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
                           </div>
                         </motion.li>
@@ -817,7 +817,40 @@ function ClientDashboard() {
                       <p className="text-xs font-medium text-muted-foreground">Start logging your meals</p>
                     </div>
                   )}
+
+                  {/* Mobile-only AI Tips */}
+                  <div className="lg:hidden">
+                    <Card className="p-4 bg-muted/30 border-none shadow-none mt-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn("h-6 w-6 text-muted-foreground", isRefreshingTips && "animate-spin")}
+                          onClick={refreshTips}
+                          disabled={isRefreshingTips}
+                        >
+                          <Sparkles className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <ul className="space-y-3 text-sm font-medium">
+                        {dailyTips.length > 0 ? (
+                          dailyTips.map((tip) => (
+                            <li key={tip.id} className="flex items-start gap-2.5">
+                              <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                              <span>{tip.content}</span>
+                            </li>
+                          ))
+                        ) : (
+                          <div className="py-4 text-center">
+                            <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                          </div>
+                        )}
+                      </ul>
+                    </Card>
+                  </div>
                 </div>
+                
                 <Card className="p-4 md:p-6 h-fit bg-muted/30 border-none shadow-none hidden lg:block">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
@@ -851,13 +884,13 @@ function ClientDashboard() {
           )}
 
           {activeTab === "ai" && (
-            <div className="-mx-4 flex-1 h-[calc(100dvh-130px)] md:mx-0 md:h-[600px]">
+            <div className="-mx-4 md:mx-0 h-[calc(100dvh-130px)] md:h-[650px] flex flex-col">
               <AIAssistant initialPrompt={prompt} />
             </div>
           )}
 
           {activeTab === "chat" && (
-            <div className="mx-auto max-w-4xl w-full -mx-4 flex-1 h-[calc(100dvh-130px)] md:mx-0 md:h-[700px]">
+            <div className="mx-auto max-w-4xl w-full -mx-4 md:mx-0 h-[calc(100dvh-130px)] md:h-[750px] flex flex-col">
               <ChatInterface peerId={data.coachId} peerName={data.coachName} />
             </div>
           )}
