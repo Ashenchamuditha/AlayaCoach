@@ -348,12 +348,12 @@ function RegisterPage() {
                     <select
                       value={gender}
                       onChange={(e) => setGender(e.target.value)}
-                      className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      className="w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
-                      <option value="MALE">Male</option>
-                      <option value="FEMALE">Female</option>
-                      <option value="OTHER">Other</option>
-                      <option value="PREFER_NOT_TO_SAY">Private</option>
+                      <option value="MALE" className="bg-background text-foreground">Male</option>
+                      <option value="FEMALE" className="bg-background text-foreground">Female</option>
+                      <option value="OTHER" className="bg-background text-foreground">Other</option>
+                      <option value="PREFER_NOT_TO_SAY" className="bg-background text-foreground">Private</option>
                     </select>
                   </div>
                   <div className="space-y-1.5">
@@ -408,13 +408,13 @@ function RegisterPage() {
                   <select
                     value={activityLevel}
                     onChange={(e) => setActivityLevel(e.target.value)}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <option value="SEDENTARY">Sedentary (Office job)</option>
-                    <option value="LIGHTLY_ACTIVE">Light (1-2 days/week)</option>
-                    <option value="MODERATELY_ACTIVE">Moderate (3-5 days/week)</option>
-                    <option value="VERY_ACTIVE">Very Active (Daily)</option>
-                    <option value="EXTRA_ACTIVE">Extra Active (Athlete)</option>
+                    <option value="SEDENTARY" className="bg-background text-foreground">Sedentary (Office job)</option>
+                    <option value="LIGHTLY_ACTIVE" className="bg-background text-foreground">Light (1-2 days/week)</option>
+                    <option value="MODERATELY_ACTIVE" className="bg-background text-foreground">Moderate (3-5 days/week)</option>
+                    <option value="VERY_ACTIVE" className="bg-background text-foreground">Very Active (Daily)</option>
+                    <option value="EXTRA_ACTIVE" className="bg-background text-foreground">Extra Active (Athlete)</option>
                   </select>
                 </div>
 
@@ -423,12 +423,12 @@ function RegisterPage() {
                   <select
                     value={primaryGoal}
                     onChange={(e) => setPrimaryGoal(e.target.value)}
-                    className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    className="w-full rounded-md border border-input bg-background text-foreground px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
-                    <option value="Weight Loss">Weight Loss</option>
-                    <option value="Muscle Gain">Muscle Gain</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Improve Health">Improve General Health</option>
+                    <option value="Weight Loss" className="bg-background text-foreground">Weight Loss</option>
+                    <option value="Muscle Gain" className="bg-background text-foreground">Muscle Gain</option>
+                    <option value="Maintenance" className="bg-background text-foreground">Maintenance</option>
+                    <option value="Improve Health" className="bg-background text-foreground">Improve General Health</option>
                   </select>
                 </div>
 
