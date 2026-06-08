@@ -18,6 +18,7 @@ import {
   Eye,
   Trash2,
   Clock,
+  Camera,
   Calendar,
   CheckCircle2,
   Circle,
@@ -42,6 +43,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -265,6 +272,146 @@ function GoalPreviewDialog({
   );
 }
 
+function FoodDetailDialog({
+  entry,
+  onClose,
+  onDelete,
+  onChat,
+}: {
+  entry: FoodEntry | null;
+  onClose: () => void;
+  onDelete: (id: number) => void;
+  onChat: (prompt: string) => void;
+}) {
+  if (!entry) return null;
+
+  return (
+    <Sheet open={!!entry} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="p-0 overflow-y-auto w-full sm:max-w-md border-none bg-card custom-scrollbar">
+        {entry.imageUrl ? (
+          <div className="w-full aspect-square relative">
+            <img 
+              src={getMediaUrl(entry.imageUrl)} 
+              alt={entry.foodName} 
+              className="w-full h-full object-cover" 
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+            <div className="absolute bottom-4 left-4 right-4 text-white">
+              <SheetHeader className="text-left space-y-0">
+                <SheetTitle className="text-2xl font-bold leading-tight text-white">{entry.foodName}</SheetTitle>
+              </SheetHeader>
+              <div className="flex gap-2 mt-2">
+                <Badge className="bg-white/20 hover:bg-white/30 backdrop-blur-md border-none text-white">
+                  {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
+                </Badge>
+                {entry.classification && (
+                  <Badge className={cn(
+                    "border-none text-white backdrop-blur-md",
+                    entry.classification === "HEALTHY" ? "bg-green-500/50" : "bg-red-500/50"
+                  )}>
+                    {entry.classification === "HEALTHY" ? "Healthy" : "Limit"}
+                  </Badge>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 pt-12 text-center bg-muted/30">
+             <div className="mx-auto w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+               <Utensils className="h-8 w-8 text-muted-foreground/50" />
+             </div>
+             <SheetHeader className="text-center space-y-0">
+               <SheetTitle className="text-2xl font-bold">{entry.foodName}</SheetTitle>
+             </SheetHeader>
+          </div>
+        )}
+
+        <div className="p-5 space-y-6 pb-20">
+          <div className="flex items-center justify-around p-4 rounded-2xl bg-muted/50 border border-border/50">
+             <div className="text-center">
+               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Calories</p>
+               <div className="flex items-center gap-1 justify-center text-orange-600">
+                 <Flame className="h-4 w-4" />
+                 <span className="text-xl font-bold">{entry.calories} <span className="text-xs font-medium">kcal</span></span>
+               </div>
+             </div>
+             <div className="w-px h-8 bg-border" />
+             <div className="text-center">
+               <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest mb-1">Portion</p>
+               <p className="text-lg font-bold">{entry.portion || "Normal"}</p>
+             </div>
+          </div>
+
+          {entry.aiFeedback && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-primary">AI Analysis</h3>
+              </div>
+              <div className="rounded-2xl bg-primary/[0.03] p-4 border border-primary/10 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                <p className="text-sm md:text-base text-foreground/80 leading-relaxed italic">
+                  "{entry.aiFeedback}"
+                </p>
+                {entry.chatStarter && (
+                  <Button 
+                    variant="default" 
+                    className="w-full mt-4 bg-gradient-brand text-white hover:opacity-90 shadow-lg gap-3 py-7 text-base font-extrabold rounded-2xl border-none h-auto"
+                    onClick={() => {
+                      onChat(entry.chatStarter!);
+                      onClose();
+                    }}
+                  >
+                    <Sparkles className="h-5 w-5 animate-pulse shrink-0" />
+                    <span className="flex-1 text-left whitespace-normal leading-tight">Ask AI: {entry.chatStarter}</span>
+                    <ChevronRight className="h-5 w-5 shrink-0" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {entry.coachFeedback && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-amber-600" />
+                <h3 className="text-sm font-bold uppercase tracking-wider text-amber-600">Coach Feedback</h3>
+              </div>
+              <div className="rounded-2xl bg-amber-50/50 p-4 border border-amber-200/50 relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1 h-full bg-amber-400/40" />
+                <p className="text-sm md:text-base text-foreground/80 leading-relaxed font-medium">
+                  {entry.coachFeedback}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="pt-4 flex gap-3">
+            <Button 
+              variant="destructive" 
+              className="flex-1 py-6 text-base font-bold rounded-xl gap-2"
+              onClick={() => {
+                onDelete(entry.id);
+                onClose();
+              }}
+            >
+              <Trash2 className="h-5 w-5" />
+              Delete Entry
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex-1 py-6 text-base font-bold rounded-xl"
+              onClick={onClose}
+            >
+              Close
+            </Button>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
+  );
+}
+
 interface DailyTip {
   id: number;
   content: string;
@@ -285,6 +432,7 @@ function ClientDashboard() {
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [selectedFood, setSelectedFood] = useState<FoodEntry | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const isMobile = useIsMobile();
@@ -661,7 +809,11 @@ function ClientDashboard() {
         <div className="grid gap-6 flex-1">
           {/* Greeting Card - Only show on Overview (and Nutrition on Desktop) */}
           {((activeTab === "overview") || (activeTab === "nutrition" && !isMobile)) && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn(activeTab === "nutrition" && "hidden md:block")}>
+            <motion.div 
+              initial={{ opacity: 0, y: 8 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className={cn(activeTab === "nutrition" && "hidden md:block")}
+            >
               <Card className="relative overflow-hidden bg-gradient-brand p-5 md:p-8 text-white shadow-glow border-none">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
                   <div>
@@ -815,106 +967,106 @@ function ClientDashboard() {
                       </div>
                       <AddGoalDialog onAdd={addGoal} />
                     </div>
-                  <ul className="mt-4 space-y-3">
-                    <AnimatePresence>
-                      {(data.goals || []).map((g) => (
-                        <motion.li
-                          key={g.id}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 10 }}
-                          className={cn(
-                            "flex items-start justify-between gap-3 rounded-xl border border-border p-3 md:p-4 transition hover:bg-muted/50 shadow-sm",
-                            g.createdByCoach && "bg-amber-50/30 border-amber-100"
-                          )}
-                        >
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p
-                                className={`text-sm md:text-base font-semibold leading-tight break-words ${g.done ? "text-muted-foreground line-through" : ""}`}
-                              >
-                                {g.title}
-                              </p>
-                              {g.createdByCoach && (
-                                <Badge variant="outline" className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter shrink-0">
-                                  Coach
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              <Badge variant="outline" className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0">
-                                {g.category}
-                              </Badge>
-                              <Badge
-                                variant={g.priority === "high" ? "destructive" : "secondary"}
-                                className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0"
-                              >
-                                {g.priority}
-                              </Badge>
-                              {g.createdAt && (
-                                <span className="text-[8px] md:text-[9px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1 shrink-0">
-                                  <Clock className="h-2.5 w-2.5" />
-                                  {new Date(g.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center gap-1 md:gap-2 shrink-0 self-center">
-                            {g.done ? (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 text-amber-600 border-amber-200 rounded-full md:rounded-lg flex items-center justify-center shrink-0"
-                                onClick={() => toggle(g.id)}
-                                disabled={togglingIds.has(g.id)}
-                                title="Re-activate"
-                              >
-                                <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Re-activate"}</span>
-                                <RefreshCw className={cn("h-4 w-4 md:hidden", togglingIds.has(g.id) && "animate-spin")} />
-                              </Button>
-                            ) : (
-                              <Button
-                                size="sm"
-                                className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 bg-green-600 hover:bg-green-700 text-white rounded-full md:rounded-lg flex items-center justify-center shrink-0"
-                                onClick={() => toggle(g.id)}
-                                disabled={togglingIds.has(g.id)}
-                                title="Complete"
-                              >
-                                <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Complete"}</span>
-                                <CheckCircle2 className="h-4 w-4 md:hidden" />
-                              </Button>
+                    <ul className="mt-4 space-y-3">
+                      <AnimatePresence>
+                        {(data.goals || []).map((g) => (
+                          <motion.li
+                            key={g.id}
+                            initial={{ opacity: 0, x: -10 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: 10 }}
+                            className={cn(
+                              "flex items-start justify-between gap-3 rounded-xl border border-border p-3 md:p-4 transition hover:bg-muted/50 shadow-sm",
+                              g.createdByCoach && "bg-amber-50/30 border-amber-100"
                             )}
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 md:h-9 md:w-9 text-primary shrink-0 rounded-full md:rounded-lg hover:bg-primary/5"
-                              onClick={() => setPreviewGoal(g)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="h-8 w-8 md:h-9 md:w-9 text-destructive shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity rounded-full md:rounded-lg hover:bg-destructive/5"
-                              onClick={() => setGoalToDelete(g.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <p
+                                  className={`text-sm md:text-base font-semibold leading-tight break-words ${g.done ? "text-muted-foreground line-through" : ""}`}
+                                >
+                                  {g.title}
+                                </p>
+                                {g.createdByCoach && (
+                                  <Badge variant="outline" className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter shrink-0">
+                                    Coach
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                <Badge variant="outline" className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0">
+                                  {g.category}
+                                </Badge>
+                                <Badge
+                                  variant={g.priority === "high" ? "destructive" : "secondary"}
+                                  className="text-[8px] md:text-[9px] h-4 py-0 px-1.5 shrink-0"
+                                >
+                                  {g.priority}
+                                </Badge>
+                                {g.createdAt && (
+                                  <span className="text-[8px] md:text-[9px] text-muted-foreground bg-muted/30 px-1.5 rounded flex items-center gap-1 shrink-0">
+                                    <Clock className="h-2.5 w-2.5" />
+                                    {new Date(g.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1 md:gap-2 shrink-0 self-center">
+                              {g.done ? (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 text-amber-600 border-amber-200 rounded-full md:rounded-lg flex items-center justify-center shrink-0"
+                                  onClick={() => toggle(g.id)}
+                                  disabled={togglingIds.has(g.id)}
+                                  title="Re-activate"
+                                >
+                                  <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Re-activate"}</span>
+                                  <RefreshCw className={cn("h-4 w-4 md:hidden", togglingIds.has(g.id) && "animate-spin")} />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  className="h-8 w-8 md:h-9 md:w-auto text-[10px] p-0 md:px-3 bg-green-600 hover:bg-green-700 text-white rounded-full md:rounded-lg flex items-center justify-center shrink-0"
+                                  onClick={() => toggle(g.id)}
+                                  disabled={togglingIds.has(g.id)}
+                                  title="Complete"
+                                >
+                                  <span className="hidden md:inline font-bold">{togglingIds.has(g.id) ? "Wait..." : "Complete"}</span>
+                                  <CheckCircle2 className="h-4 w-4 md:hidden" />
+                                </Button>
+                              )}
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 md:h-9 md:w-9 text-primary shrink-0 rounded-full md:rounded-lg hover:bg-primary/5"
+                                onClick={() => setPreviewGoal(g)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-8 w-8 md:h-9 md:w-9 text-destructive shrink-0 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity rounded-full md:rounded-lg hover:bg-destructive/5"
+                                onClick={() => setGoalToDelete(g.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                      {(!data.goals || data.goals.length === 0) && (
+                        <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                            <Target className="h-5 w-5 text-muted-foreground" />
                           </div>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                    {(!data.goals || data.goals.length === 0) && (
-                      <div className="flex flex-col items-center justify-center py-8 md:py-12 text-center">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                          <Target className="h-5 w-5 text-muted-foreground" />
+                          <h3 className="mt-4 text-xs font-semibold">No goals yet</h3>
                         </div>
-                        <h3 className="mt-4 text-xs font-semibold">No goals yet</h3>
-                      </div>
-                    )}
-                  </ul>
-                </Card>
+                      )}
+                    </ul>
+                  </Card>
                 </div>
 
                 <div className="space-y-6">
@@ -1006,62 +1158,106 @@ function ClientDashboard() {
                 </div>
               </div>
 
-              <div className="space-y-3 md:space-y-4">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg md:text-xl font-bold tracking-tight px-1">Food Log</h2>
-                  <AddFoodDialog onAdd={(entry: any) => setFoodEntries([entry as FoodEntry, ...(foodEntries || [])])} />
-                </div>
+              <div className="space-y-4">
+                <div>
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <div className="flex items-center gap-2">
+                      <h2 className="text-lg md:text-xl font-bold tracking-tight">Food Log</h2>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className="h-8 w-8 text-muted-foreground hover:text-primary transition-colors" 
+                        onClick={() => {
+                          fetchFoodEntries();
+                          toast.info("Refreshing food log...");
+                        }}
+                      >
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <AddFoodDialog onAdd={(entry: any) => setFoodEntries([entry as FoodEntry, ...(foodEntries || [])])} />
+                  </div>
 
-                <div className="grid gap-3 md:gap-4 lg:grid-cols-3">
-                  <div className="lg:col-span-2 w-full space-y-3 md:space-y-4">
-                    <AnimatePresence>
-                      {(foodEntries || []).map((entry) => (
-                        <motion.div
-                          key={entry.id}
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
+                  {/* Floating Action Button for Mobile */}
+                  <div className="md:hidden fixed bottom-24 right-6 z-50">
+                    <AddFoodDialog 
+                      onAdd={(entry: any) => setFoodEntries([entry as FoodEntry, ...(foodEntries || [])])} 
+                      trigger={
+                        <Button 
+                          className="h-14 px-6 rounded-full bg-gradient-brand text-white shadow-2xl hover:scale-110 active:scale-95 transition-all flex items-center justify-center border-none gap-2.5 font-black uppercase tracking-tighter"
                         >
-                          <div className="flex flex-col sm:flex-row gap-3 md:gap-4 relative">
+                          <Camera className="h-6 w-6" />
+                          <span>Log Food</span>
+                        </Button>
+                      }
+                    />
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-3">
+                    <div className="lg:col-span-2 space-y-4">
+                      <AnimatePresence>
+                        {(foodEntries || []).map((entry) => (
+                          <motion.div
+                            key={entry.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-3 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] w-full cursor-pointer md:cursor-default"
+                            onClick={() => isMobile && setSelectedFood(entry)}
+                          >
+                            {/* Desktop Delete Button (Hover) */}
                             <Button
                               size="icon"
-                              variant="ghost"
-                              className="absolute -top-1 -right-1 md:-top-2 md:-right-2 h-7 w-7 md:h-8 md:w-8 text-destructive bg-background/80 backdrop-blur-sm md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10 rounded-full border border-border/50 shadow-sm"
+                              variant="destructive"
+                              className="hidden md:flex absolute top-2 right-2 h-8 w-8 text-white shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-20 rounded-full items-center justify-center"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 setFoodToDelete(entry.id);
                               }}
                             >
-                              <Trash2 className="h-3.5 w-3.5 md:h-4 md:w-4" />
+                              <Trash2 className="h-4 w-4" />
                             </Button>
-                            
-                            <div className="flex gap-3 md:gap-4 items-start">
+
+                            <div className="relative flex gap-3 md:gap-4 items-start">
                               {entry.imageUrl ? (
-                                <div className="w-20 h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                                <div className="w-16 h-16 xs:w-20 xs:h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
                                   <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                                 </div>
                               ) : (
-                                <div className="w-20 h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
-                                  <Utensils className="h-8 w-8 md:h-10 md:w-10 text-muted-foreground/30" />
+                                <div className="w-16 h-16 xs:w-20 xs:h-20 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
+                                  <Utensils className="h-6 w-6 md:h-10 md:w-10 text-muted-foreground/30" />
                                 </div>
                               )}
                               
                               <div className="flex-1 min-w-0 flex flex-col justify-start py-0.5">
-                                <h3 className="font-bold text-base md:text-lg leading-tight break-words mb-1.5 pr-6">{entry.foodName}</h3>
-                                <div className="flex flex-wrap gap-1.5 text-[10px] md:text-xs font-bold mb-2">
-                                  <Badge variant="outline" className="text-[9px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
+                                <div className="flex items-start justify-between gap-2">
+                                  <h3 className="font-bold text-sm xs:text-base md:text-lg leading-tight break-words mb-1.5 flex-1">{entry.foodName}</h3>
+                                  {/* Mobile Delete Button (Always Visible) */}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-8 w-8 text-destructive md:hidden shrink-0 -mt-1 -mr-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFoodToDelete(entry.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div className="flex flex-wrap gap-1 md:gap-1.5 text-[9px] md:text-xs font-bold mb-2">
+                                  <Badge variant="outline" className="text-[8px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
                                     {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
                                   </Badge>
                                   <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
-                                    <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
+                                    <Flame className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.calories || 0} kcal
                                   </span>
-                                  <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[100px]">
+                                  <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[80px] xs:max-w-[100px]">
                                     {entry.portion || "Normal"}
                                   </span>
                                 </div>
                                 {entry.classification && (
                                   <div className={cn(
-                                    "w-fit px-1.5 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
+                                    "w-fit px-1.5 py-0.5 rounded text-[7px] md:text-[9px] font-bold uppercase tracking-widest",
                                     entry.classification === "HEALTHY" 
                                       ? "bg-green-100 text-green-700" 
                                       : "bg-red-100 text-red-700"
@@ -1071,91 +1267,93 @@ function ClientDashboard() {
                                 )}
                               </div>
                             </div>
-                          </div>
 
-                          {entry.aiFeedback && (
-                            <div className="mt-2.5 relative rounded-lg md:rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10">
-                              <div className="absolute top-0 left-0 w-0.5 h-full bg-primary/20" />
-                              <div className="flex gap-1 mb-1">
-                                <Sparkles className="h-2 w-2 text-primary" />
-                                <span className="text-[7px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
-                              </div>
-                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed italic break-words whitespace-pre-wrap w-full">
-                                "{entry.aiFeedback}"
-                              </p>
-                              {entry.chatStarter && (
-                                <div className="mt-2 flex justify-end">
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
-                                    className="h-auto py-1 max-w-full text-[9px] md:text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-md border border-primary/20 px-2"
-                                    onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
-                                  >
-                                    <span className="whitespace-normal text-left">Ask: {entry.chatStarter}</span>
-                                    <ChevronRight className="h-3 w-3 shrink-0" />
-                                  </Button>
+                            {entry.aiFeedback && (
+                              <div className="mt-2.5 relative rounded-lg md:rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10">
+                                <div className="absolute top-0 left-0 w-0.5 h-full bg-primary/20" />
+                                <div className="flex gap-1 mb-1">
+                                  <Sparkles className="h-2 w-2 text-primary" />
+                                  <span className="text-[7px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
                                 </div>
-                              )}
-                            </div>
-                          )}
-
-                          {entry.coachFeedback && (
-                            <div className="mt-2 relative rounded-lg md:rounded-xl bg-amber-50/50 p-3 md:p-4 border border-amber-200/50">
-                              <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-400/40" />
-                              <div className="flex gap-1 mb-1">
-                                <Users className="h-2 w-2 text-amber-600" />
-                                <span className="text-[7px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
+                                <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed italic break-words whitespace-pre-wrap w-full">
+                                  "{entry.aiFeedback}"
+                                </p>
+                                {entry.chatStarter && (
+                                  <div className="mt-2 flex justify-end">
+                                    <Button 
+                                      variant="ghost" 
+                                      size="sm" 
+                                      className="h-auto py-1.5 max-w-full text-[9px] md:text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-lg border border-primary/20 px-2.5 shadow-sm bg-white/50 backdrop-blur-sm relative z-20"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any });
+                                      }}
+                                    >
+                                      <span className="whitespace-normal text-left">Ask AI: {entry.chatStarter}</span>
+                                      <ChevronRight className="h-3 w-3 shrink-0" />
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
-                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed font-medium break-words whitespace-pre-wrap w-full">
-                                {entry.coachFeedback}
-                              </p>
-                            </div>
-                          )}
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-                    
-                    {(!foodEntries || foodEntries.length === 0) && (
-                      <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/10 rounded-2xl border-2 border-dashed border-muted-foreground/10">
-                        <div className="h-10 w-10 rounded-full bg-muted/20 flex items-center justify-center mb-2">
-                          <Utensils className="h-5 w-5 text-muted-foreground opacity-30" />
-                        </div>
-                        <h3 className="text-sm font-bold text-muted-foreground">Log your first meal</h3>
-                        <p className="text-[8px] text-muted-foreground/60 max-w-[130px] mt-1">Get AI insights on your nutrition goals.</p>
-                      </div>
-                    )}
-                    </div>
-                  </div>
-                  
-                  {/* Desktop AI Tips - Styled consistently */}
-                  <div className="hidden lg:block space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
-                        onClick={refreshTips}
-                        disabled={isRefreshingTips}
-                      >
-                        <Sparkles className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="grid gap-3">
-                      {dailyTips.length > 0 ? (
-                        dailyTips.map((tip) => (
-                          <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
-                            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                              <Sparkles className="h-4 w-4 text-primary" />
-                            </div>
-                            <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
+                            )}
+
+                            {entry.coachFeedback && (
+                              <div className="mt-2 relative rounded-lg md:rounded-xl bg-amber-50/50 p-3 md:p-4 border border-amber-200/50">
+                                <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-400/40" />
+                                <div className="flex gap-1 mb-1">
+                                  <Users className="h-2 w-2 text-amber-600" />
+                                  <span className="text-[7px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
+                                </div>
+                                <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed font-medium break-words whitespace-pre-wrap w-full">
+                                  {entry.coachFeedback}
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                      
+                      {(!foodEntries || foodEntries.length === 0) && (
+                        <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/10 rounded-2xl border-2 border-dashed border-muted-foreground/10">
+                          <div className="h-10 w-10 rounded-full bg-muted/20 flex items-center justify-center mb-2">
+                            <Utensils className="h-5 w-5 text-muted-foreground opacity-30" />
                           </div>
-                        ))
-                      ) : (
-                        <div className="py-10 text-center border rounded-2xl border-dashed">
-                          <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                          <h3 className="text-sm font-bold text-muted-foreground">Log your first meal</h3>
+                          <p className="text-[8px] text-muted-foreground/60 max-w-[130px] mt-1">Get AI insights on your nutrition goals.</p>
                         </div>
                       )}
+                    </div>
+                    
+                    {/* Desktop AI Tips - Styled consistently */}
+                    <div className="hidden lg:block space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                          onClick={refreshTips}
+                          disabled={isRefreshingTips}
+                        >
+                          <Sparkles className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      <div className="grid gap-3">
+                        {dailyTips.length > 0 ? (
+                          dailyTips.map((tip) => (
+                            <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
+                              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                                <Sparkles className="h-4 w-4 text-primary" />
+                              </div>
+                              <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-10 text-center border rounded-2xl border-dashed">
+                            <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -1178,12 +1376,24 @@ function ClientDashboard() {
       </main>
 
       <GoalPreviewDialog goal={previewGoal} onClose={() => setPreviewGoal(null)} onToggle={toggle} />
+      
+      <FoodDetailDialog 
+        entry={selectedFood} 
+        onClose={() => setSelectedFood(null)} 
+        onDelete={(id) => setFoodToDelete(id)}
+        onChat={(prompt) => navigate({ to: "/app", search: { tab: "ai", prompt } as any })}
+      />
+      
       <AlertDialog open={!!goalToDelete} onOpenChange={(o) => !o && setGoalToDelete(null)}>
         <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
-          <AlertDialogHeader><AlertDialogTitle>Delete Goal?</AlertDialogTitle></AlertDialogHeader>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Goal?</AlertDialogTitle>
+          </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">Delete</AlertDialogAction>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

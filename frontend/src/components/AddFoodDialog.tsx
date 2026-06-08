@@ -25,9 +25,10 @@ type FoodInput = z.infer<typeof schema>;
 
 interface Props {
   onAdd: (entry: unknown) => void;
+  trigger?: React.ReactNode;
 }
 
-export function AddFoodDialog({ onAdd }: Props) {
+export function AddFoodDialog({ onAdd, trigger }: Props) {
   const [open, setOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -146,14 +147,16 @@ export function AddFoodDialog({ onAdd }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          size="sm"
-          variant="outline"
-          className="border-primary text-primary hover:bg-primary/10"
-        >
-          <Camera className="mr-1 h-4 w-4" />
-          Log Food
-        </Button>
+        {trigger || (
+          <Button
+            size="sm"
+            variant="outline"
+            className="border-primary text-primary hover:bg-primary/10"
+          >
+            <Camera className="mr-1 h-4 w-4" />
+            Log Food
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
