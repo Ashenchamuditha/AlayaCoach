@@ -8,7 +8,7 @@ export const API_BASE =
 
 if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
   console.warn(
-    "VITE_API_URL was not found in environment. Using hardcoded production fallback: https://alayacoach-production.up.railway.app/api"
+    "VITE_API_URL was not found in environment. Using hardcoded production fallback: https://alayacoach-production.up.railway.app/api",
   );
 }
 
@@ -21,14 +21,14 @@ export const api = axios.create({
 export const getMediaUrl = (path?: string) => {
   if (!path) return "";
   if (path.startsWith("http")) return path;
-  
+
   // Remove trailing /api if present to get the root server URL
   const root = API_BASE.replace(/\/api\/?$/, "");
-  
+
   // Ensure path starts with / and root does not end with /
   const cleanRoot = root.endsWith("/") ? root.slice(0, -1) : root;
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
-  
+
   return `${cleanRoot}${cleanPath}`;
 };
 

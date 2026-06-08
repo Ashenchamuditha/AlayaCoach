@@ -90,6 +90,9 @@ interface Goal {
   createdAt?: string;
   updatedAt?: string;
   coachFeedback?: string;
+  createdByCoach?: boolean;
+  coachViewed?: boolean;
+  deletedByClient?: boolean;
 }
 
 interface FoodEntry {
@@ -104,6 +107,15 @@ interface FoodEntry {
   chatStarter?: string;
   coachFeedback?: string;
   imageUrl?: string;
+}
+
+interface WeeklyReport {
+  id: number;
+  startDate: string;
+  endDate: string;
+  clientSummary: string;
+  coachBrief: string;
+  createdAt: string;
 }
 
 interface DashboardData {
@@ -266,6 +278,8 @@ function ClientDashboard() {
   const [foodToDelete, setFoodToDelete] = useState<number | null>(null);
   const [isRefreshingTips, setIsRefreshingTips] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
+  const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const fetchDashboard = () => {
     api
@@ -289,6 +303,31 @@ function ClientDashboard() {
       .get<DailyTip[]>("/tips/daily")
       .then((r) => setDailyTips(r.data))
       .catch((err) => console.error("Daily tips fetch failed:", err));
+  };
+
+  const fetchWeeklyReport = () => {
+    api
+      .get<WeeklyReport>("/reports/latest")
+      .then((r) => setWeeklyReport(r.data))
+      .catch((err) => {
+        if (err.response?.status !== 404) {
+          console.error("Weekly report fetch failed:", err);
+        }
+      });
+  };
+
+  const generateReport = async () => {
+    setIsGeneratingReport(true);
+    try {
+      const { data } = await api.post<WeeklyReport>("/reports/generate");
+      setWeeklyReport(data);
+      toast.success("New weekly report generated!");
+    } catch (err) {
+      console.error("Report generation failed:", err);
+      toast.error("Failed to generate report");
+    } finally {
+      setIsGeneratingReport(false);
+    }
   };
 
   const refreshTips = async () => {
@@ -319,6 +358,7 @@ function ClientDashboard() {
     fetchDashboard();
     fetchFoodEntries();
     fetchDailyTips();
+    fetchWeeklyReport();
   }, []);
 
   useEffect(() => {
@@ -513,9 +553,9 @@ function ClientDashboard() {
       <SiteHeader />
       <main className="container mx-auto flex-1 flex flex-col px-4 py-4 md:py-8 overflow-x-hidden">
         <div className="grid gap-6 flex-1">
-          {/* Greeting Card - Only show on Overview and Nutrition */}
-          {(activeTab === "overview" || activeTab === "nutrition") && (
-            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+          {/* Greeting Card - Only show on Overview (and Nutrition on Desktop) */}
+          {((activeTab === "overview") || (activeTab === "nutrition" && window.innerWidth > 768)) && (
+            <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={cn(activeTab === "nutrition" && "hidden md:block")}>
               <Card className="relative overflow-hidden bg-gradient-brand p-5 md:p-8 text-white shadow-glow border-none">
                 <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
                   <div>
@@ -612,16 +652,49 @@ function ClientDashboard() {
               </div>
 
               <div className="grid gap-6 lg:grid-cols-3">
-                <Card className="p-4 md:p-6 lg:col-span-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <h2 className="text-lg font-semibold">Today's goals</h2>
-                      <p className="mt-1 text-xs md:text-sm text-muted-foreground">
-                        Check them off as you go.
-                      </p>
+                <div className="space-y-6 lg:col-span-2">
+                  <Card className="p-4 md:p-6 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-indigo-500" />
+                        <h2 className="text-lg font-semibold">Weekly AI Summary</h2>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateReport}
+                        disabled={isGeneratingReport}
+                        className="text-xs bg-white/50 dark:bg-black/50"
+                      >
+                        {isGeneratingReport ? "Analyzing..." : (weeklyReport ? "Refresh" : "Generate Report")}
+                      </Button>
                     </div>
-                    <AddGoalDialog onAdd={addGoal} />
-                  </div>
+                    {weeklyReport ? (
+                      <div className="space-y-3">
+                        <p className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium">
+                          {weeklyReport.clientSummary}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground text-right">
+                          Report for: {new Date(weeklyReport.startDate).toLocaleDateString()} - {new Date(weeklyReport.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic py-2">
+                        Click "Generate Report" to get a personalized AI summary of your progress this week.
+                      </p>
+                    )}
+                  </Card>
+
+                  <Card className="p-4 md:p-6">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <h2 className="text-lg font-semibold">Today's goals</h2>
+                        <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+                          Check them off as you go.
+                        </p>
+                      </div>
+                      <AddGoalDialog onAdd={addGoal} />
+                    </div>
                   <ul className="mt-4 space-y-3">
                     <AnimatePresence>
                       {(data.goals || []).map((g) => (
@@ -630,14 +703,24 @@ function ClientDashboard() {
                           initial={{ opacity: 0, x: -10 }}
                           animate={{ opacity: 1, x: 0 }}
                           exit={{ opacity: 0, x: 10 }}
-                          className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border p-3 transition hover:bg-muted/50"
+                          className={cn(
+                            "flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border p-3 transition hover:bg-muted/50",
+                            g.createdByCoach && "bg-amber-50/30 border-amber-100"
+                          )}
                         >
                           <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-sm font-medium truncate ${g.done ? "text-muted-foreground line-through" : ""}`}
-                            >
-                              {g.title}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p
+                                className={`text-sm font-medium truncate ${g.done ? "text-muted-foreground line-through" : ""}`}
+                              >
+                                {g.title}
+                              </p>
+                              {g.createdByCoach && (
+                                <Badge variant="outline" className="text-[7px] h-3.5 bg-amber-100 text-amber-700 border-amber-200 uppercase font-black tracking-tighter">
+                                  Coach
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex flex-wrap gap-1.5 mt-1">
                               <Badge variant="outline" className="text-[8px] h-3.5 py-0 px-1.5 shrink-0">
                                 {g.category}
@@ -708,6 +791,7 @@ function ClientDashboard() {
                     )}
                   </ul>
                 </Card>
+                </div>
 
                 <div className="space-y-6">
                   <Card className="p-4 md:p-6">
@@ -734,30 +818,29 @@ function ClientDashboard() {
           )}
 
           {activeTab === "nutrition" && (
-            <div className="space-y-6">
-              {/* Daily Summary Card */}
-              <Card className="overflow-hidden border-none rounded-3xl bg-gradient-brand text-white shadow-lg">
-                <div className="p-5 md:p-8">
-                  <div className="flex items-center justify-between mb-4">
+            <div className="space-y-4 md:space-y-6">
+              {/* Daily Summary Card - Compact on Mobile */}
+              <Card className="overflow-hidden border-none rounded-2xl md:rounded-3xl bg-gradient-brand text-white shadow-lg">
+                <div className="p-4 md:p-8">
+                  <div className="flex items-center justify-between mb-3 md:mb-4">
                     <div className="min-w-0">
-                      <p className="text-[10px] md:text-xs font-bold uppercase tracking-wider opacity-80">Today's Intake</p>
-                      <h2 className="text-3xl md:text-4xl font-extrabold mt-1 truncate">
+                      <p className="text-[9px] md:text-xs font-bold uppercase tracking-wider opacity-80">Today's Intake</p>
+                      <h2 className="text-2xl md:text-4xl font-extrabold mt-0.5 truncate">
                         {todayCalories}
-                        <span className="ml-1.5 text-sm md:text-lg font-medium opacity-80">kcal</span>
+                        <span className="ml-1 text-xs md:text-lg font-medium opacity-80">kcal</span>
                       </h2>
                     </div>
-                    <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
-                      <Flame className="h-6 w-6 text-white" />
+                    <div className="h-10 w-10 md:h-12 md:w-12 rounded-xl md:rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner shrink-0">
+                      <Flame className="h-5 w-5 md:h-6 md:w-6 text-white" />
                     </div>
                   </div>
                   
-                  {/* Calorie Progress Bar (Assuming 2500 as target for demo) */}
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
+                  <div className="space-y-1.5">
+                    <div className="flex justify-between text-[8px] md:text-[10px] font-bold uppercase tracking-tighter">
                       <span>Progress</span>
                       <span>{Math.round((todayCalories / 2500) * 100)}%</span>
                     </div>
-                    <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                    <div className="h-1.5 md:h-2 w-full bg-white/20 rounded-full overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min((todayCalories / 2500) * 100, 100)}%` }}
@@ -768,90 +851,88 @@ function ClientDashboard() {
                 </div>
               </Card>
 
-              {/* Mobile-only AI Tips - Re-styled for better appeal and visibility at top */}
-              <div className="lg:hidden space-y-3">
+              {/* Mobile AI Insights - Horizontal Swipe to save vertical space & view full content */}
+              <div className="lg:hidden space-y-2">
                 <div className="flex items-center justify-between px-1">
-                  <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Daily Insights</h3>
+                  <h3 className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 italic">Daily AI Insights</h3>
                   <Button 
                     variant="ghost" 
                     size="icon" 
-                    className={cn("h-7 w-7 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                    className={cn("h-6 w-6 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
                     onClick={refreshTips}
                     disabled={isRefreshingTips}
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Sparkles className="h-3 w-3" />
                   </Button>
                 </div>
-                <div className="grid gap-3">
+                <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 no-scrollbar snap-x">
                   {dailyTips.length > 0 ? (
                     dailyTips.map((tip) => (
-                      <div key={tip.id} className="flex gap-3 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
-                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                          <Sparkles className="h-3.5 w-3.5 text-primary" />
-                        </div>
-                        <p className="text-[11px] font-medium leading-relaxed">{tip.content}</p>
+                      <div key={tip.id} className="flex gap-3 p-4 rounded-xl bg-muted/30 border border-border/50 min-w-[88%] snap-center shadow-sm">
+                        <Sparkles className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                        <p className="text-[11px] font-medium leading-relaxed text-foreground/90">{tip.content}</p>
                       </div>
                     ))
                   ) : (
-                    <div className="w-full py-8 text-center border rounded-2xl border-dashed">
+                    <div className="w-full py-6 text-center border rounded-xl border-dashed">
                       <p className="text-[10px] text-muted-foreground italic">AI is crafting your tips...</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold tracking-tight">Food Log</h2>
+              <div className="space-y-3 md:space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg md:text-xl font-bold tracking-tight px-1">Food Log</h2>
                   <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
                 </div>
 
-                <div className="grid gap-6 lg:grid-cols-3">
-                  <div className="lg:col-span-2 space-y-4">
+                <div className="grid gap-3 md:gap-4 lg:grid-cols-3">
+                  <div className="lg:col-span-2 space-y-3 md:space-y-4">
                     <AnimatePresence>
                       {(foodEntries || []).map((entry) => (
                         <motion.div
                           key={entry.id}
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="group relative rounded-2xl border border-border/40 bg-card p-4 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden"
+                          className="group relative rounded-xl md:rounded-2xl border border-border/40 bg-card p-2.5 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98] overflow-hidden"
                         >
-                          <div className="flex gap-3 md:gap-4">
+                          <div className="flex gap-2.5 md:gap-4">
                             {entry.imageUrl ? (
-                              <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                              <div className="w-14 h-14 md:w-28 md:h-28 rounded-lg md:rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
                                 <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
                               </div>
                             ) : (
-                              <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
-                                <Utensils className="h-8 w-8 text-muted-foreground/30" />
+                              <div className="w-14 h-14 md:w-28 md:h-28 rounded-lg md:rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
+                                <Utensils className="h-5 w-5 md:h-8 md:w-8 text-muted-foreground/30" />
                               </div>
                             )}
                             <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
                               <div>
-                                <div className="flex items-start justify-between gap-2">
-                                  <h3 className="font-bold text-sm md:text-lg truncate leading-tight">{entry.foodName}</h3>
-                                  <div className="flex items-center gap-2">
-                                    <Badge variant="outline" className="text-[8px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none px-1.5 h-4">
-                                      {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
+                                <div className="flex items-start justify-between gap-1.5">
+                                  <h3 className="font-bold text-[11px] md:text-lg truncate leading-tight">{entry.foodName}</h3>
+                                  <div className="flex items-center gap-1">
+                                    <Badge variant="outline" className="text-[7px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none px-1 h-3 md:h-4">
+                                      {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
                                     </Badge>
                                     <Button
                                       size="icon"
                                       variant="ghost"
-                                      className="h-6 w-6 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
+                                      className="h-4 w-4 md:h-6 md:w-6 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setFoodToDelete(entry.id);
                                       }}
                                     >
-                                      <Trash2 className="h-3.5 w-3.5" />
+                                      <Trash2 className="h-2.5 w-2.5 md:h-3.5 md:w-3.5" />
                                     </Button>
                                   </div>
                                 </div>
-                                <div className="mt-1.5 flex flex-wrap gap-1.5 text-[9px] md:text-xs font-bold">
-                                  <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full shrink-0">
-                                    <Flame className="h-2.5 w-2.5" /> {entry.calories || 0} kcal
+                                <div className="mt-0.5 flex flex-wrap gap-1 text-[8px] md:text-xs font-bold">
+                                  <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1 py-0.5 rounded-full shrink-0">
+                                    <Flame className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.calories || 0} kcal
                                   </span>
-                                  <span className="text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full truncate max-w-[100px]">
+                                  <span className="text-muted-foreground bg-muted/50 px-1 py-0.5 rounded-full truncate max-w-[70px]">
                                     {entry.portion || "Normal"}
                                   </span>
                                 </div>
@@ -859,7 +940,7 @@ function ClientDashboard() {
 
                               {entry.classification && (
                                 <div className={cn(
-                                  "mt-2 w-fit px-2 py-0.5 rounded text-[8px] md:text-[9px] font-bold uppercase tracking-widest",
+                                  "mt-1 w-fit px-1 py-0.5 rounded text-[7px] md:text-[9px] font-bold uppercase tracking-widest",
                                   entry.classification === "HEALTHY" 
                                     ? "bg-green-100 text-green-700" 
                                     : "bg-red-100 text-red-700"
@@ -871,25 +952,25 @@ function ClientDashboard() {
                           </div>
 
                           {entry.aiFeedback && (
-                            <div className="mt-4 relative rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10 overflow-hidden">
-                              <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
-                              <div className="flex gap-2 mb-2">
-                                <Sparkles className="h-3 w-3 text-primary" />
-                                <span className="text-[8px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
+                            <div className="mt-2.5 relative rounded-lg md:rounded-xl bg-primary/[0.03] p-2 md:p-4 border border-primary/10 overflow-hidden">
+                              <div className="absolute top-0 left-0 w-0.5 h-full bg-primary/20" />
+                              <div className="flex gap-1 mb-1">
+                                <Sparkles className="h-2 w-2 text-primary" />
+                                <span className="text-[7px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
                               </div>
-                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed italic break-words">
+                              <p className="text-[10px] md:text-sm text-foreground/80 leading-relaxed italic break-words">
                                 "{entry.aiFeedback}"
                               </p>
                               {entry.chatStarter && (
-                                <div className="mt-3 flex justify-end">
+                                <div className="mt-2 flex justify-end">
                                   <Button 
                                     variant="ghost" 
                                     size="sm" 
-                                    className="h-7 max-w-full text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-lg border border-primary/20"
+                                    className="h-5 max-w-full text-[8px] md:text-[10px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-md border border-primary/20 px-1.5"
                                     onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
                                   >
                                     <span className="truncate">Ask: {entry.chatStarter}</span>
-                                    <ChevronRight className="h-3 w-3 shrink-0" />
+                                    <ChevronRight className="h-2 w-2 shrink-0" />
                                   </Button>
                                 </div>
                               )}
@@ -897,13 +978,13 @@ function ClientDashboard() {
                           )}
 
                           {entry.coachFeedback && (
-                            <div className="mt-3 relative rounded-xl bg-amber-50/50 p-3 md:p-4 border border-amber-200/50 overflow-hidden">
-                              <div className="absolute top-0 left-0 w-1 h-full bg-amber-400/40" />
-                              <div className="flex gap-2 mb-2">
-                                <Users className="h-3 w-3 text-amber-600" />
-                                <span className="text-[8px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
+                            <div className="mt-2 relative rounded-lg md:rounded-xl bg-amber-50/50 p-2 md:p-4 border border-amber-200/50 overflow-hidden">
+                              <div className="absolute top-0 left-0 w-0.5 h-full bg-amber-400/40" />
+                              <div className="flex gap-1 mb-1">
+                                <Users className="h-2 w-2 text-amber-600" />
+                                <span className="text-[7px] font-black uppercase tracking-widest text-amber-700/70">Coach Feedback</span>
                               </div>
-                              <p className="text-[11px] md:text-sm text-foreground/80 leading-relaxed break-words font-medium">
+                              <p className="text-[10px] md:text-sm text-foreground/80 leading-relaxed break-words font-medium">
                                 {entry.coachFeedback}
                               </p>
                             </div>
@@ -913,12 +994,12 @@ function ClientDashboard() {
                     </AnimatePresence>
                     
                     {(!foodEntries || foodEntries.length === 0) && (
-                      <div className="flex flex-col items-center justify-center py-16 text-center bg-muted/10 rounded-3xl border-2 border-dashed border-muted-foreground/10 mx-2">
-                        <div className="h-14 w-14 rounded-full bg-muted/20 flex items-center justify-center mb-4">
-                          <Utensils className="h-7 w-7 text-muted-foreground opacity-30" />
+                      <div className="flex flex-col items-center justify-center py-10 text-center bg-muted/10 rounded-2xl border-2 border-dashed border-muted-foreground/10">
+                        <div className="h-10 w-10 rounded-full bg-muted/20 flex items-center justify-center mb-2">
+                          <Utensils className="h-5 w-5 text-muted-foreground opacity-30" />
                         </div>
-                        <h3 className="text-lg font-bold text-muted-foreground">Log your first meal</h3>
-                        <p className="text-[10px] text-muted-foreground/60 max-w-[180px] mt-1">Get AI insights on your nutrition goals.</p>
+                        <h3 className="text-sm font-bold text-muted-foreground">Log your first meal</h3>
+                        <p className="text-[8px] text-muted-foreground/60 max-w-[130px] mt-1">Get AI insights on your nutrition goals.</p>
                       </div>
                     )}
                   </div>

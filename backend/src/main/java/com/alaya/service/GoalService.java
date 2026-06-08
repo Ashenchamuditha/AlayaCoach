@@ -68,6 +68,9 @@ public class GoalService {
             try { p = Goal.GoalPriority.valueOf(priority.toUpperCase()); } catch (Exception e) {}
         }
 
+        User creator = userRepository.findById(creatorId).orElse(null);
+        boolean isCoach = creator != null && creator.getRole() == com.alaya.model.Role.COACH;
+
         Goal goal = goalRepository.save(Goal.builder()
                 .title(title)
                 .description(description)
@@ -81,35 +84,33 @@ public class GoalService {
                 .endTime(endTime)
                 .targetValue(targetValue != null ? targetValue : 0.0)
                 .targetUnit(targetUnit != null ? targetUnit : "")
+                .createdByCoach(isCoach)
+                .coachViewed(isCoach) // If coach created it, they've viewed it
                 .build());
         
-        // Notify client and send email
+        // Notify client or coach
         User client = userRepository.findById(clientId).orElse(null);
-        if (client != null) {
-            String creatorName = null;
-            if (creatorId != null && !creatorId.equals(clientId)) {
-                User creator = userRepository.findById(creatorId).orElse(null);
-                if (creator != null) {
-                    creatorName = creator.getFullName();
-                }
-            }
+        User coach = userRepository.findById(coachId).orElse(null);
 
-            // In-system notification
-            String notificationTitle = creatorName != null ? "New Goal Assigned by Coach" : "New Goal Added";
-            String notificationMsg = creatorName != null 
-                ? "Your coach " + creatorName + " has assigned a new goal to you: " + title
-                : "You have added a new goal: " + title;
-            
+        if (isCoach && client != null) {
+            // Coach added a goal for client
             notificationService.createNotification(
                     clientId,
-                    notificationTitle,
-                    notificationMsg,
+                    "New Goal Assigned by Coach",
+                    "Your coach " + creator.getFullName() + " has assigned a new goal to you: " + title,
                     com.alaya.model.Notification.NotificationType.GOAL_UPDATE,
                     String.valueOf(goal.getId())
             );
-
-            // Email notification
-            emailService.sendGoalAddedEmail(client.getEmail(), client.getFullName(), title, creatorName);
+            emailService.sendGoalAddedEmail(client.getEmail(), client.getFullName(), title, creator.getFullName());
+        } else if (!isCoach && coach != null) {
+            // Client added a goal, notify coach
+            notificationService.createNotification(
+                    coachId,
+                    "New Client Goal Added",
+                    "Your client " + (client != null ? client.getFullName() : "A client") + " added a new goal: " + title,
+                    com.alaya.model.Notification.NotificationType.GOAL_UPDATE,
+                    String.valueOf(goal.getId())
+            );
         }
 
         notifyUpdate(goal);
@@ -145,6 +146,9 @@ public class GoalService {
         if (targetValue != null) goal.setTargetValue(targetValue);
         if (targetUnit != null) goal.setTargetUnit(targetUnit);
 
+        // If client updates it, coach might need to see it as "new" again? 
+        // User didn't specify, but let's stick to just creation for now.
+
         goal.setUpdatedAt(LocalDateTime.now());
         Goal saved = goalRepository.save(goal);
         notifyUpdate(saved);
@@ -155,32 +159,48 @@ public class GoalService {
         Goal goal = goalRepository.findById(goalId)
                 .orElseThrow(() -> new IllegalArgumentException("Goal not found"));
         
-        // Both coach and client can delete their own goals
-        if (!goal.getClientId().equals(userId) && !goal.getCoachId().equals(userId)) {
-            throw new AccessDeniedException("Not authorized to delete this goal");
+        User user = userRepository.findById(userId).orElseThrow();
+
+        if (user.getRole() == com.alaya.model.Role.CLIENT) {
+            if (!goal.getClientId().equals(userId)) throw new AccessDeniedException("Not authorized");
+            // Soft delete for client
+            goal.setDeletedByClient(true);
+            goalRepository.save(goal);
+        } else {
+            if (!goal.getCoachId().equals(userId)) throw new AccessDeniedException("Not authorized");
+            // Hard delete for coach
+            goalRepository.delete(goal);
         }
         
-        goalRepository.delete(goal);
-        
-        // Notify of deletion
+        // Notify of deletion/update
         try {
-            User client = userRepository.findById(goal.getClientId()).orElse(null);
-            User coach = userRepository.findById(goal.getCoachId()).orElse(null);
+            User clientUser = userRepository.findById(goal.getClientId()).orElse(null);
+            User coachUser = userRepository.findById(goal.getCoachId()).orElse(null);
             Map<String, Object> update = new java.util.HashMap<>();
             update.put("type", "GOAL_DELETED");
             update.put("goalId", goalId);
             update.put("clientId", goal.getClientId());
-            if (client != null) messagingTemplate.convertAndSendToUser(client.getEmail(), "/queue/updates", update);
-            if (coach != null) messagingTemplate.convertAndSendToUser(coach.getEmail(), "/queue/updates", update);
+            if (clientUser != null) messagingTemplate.convertAndSendToUser(clientUser.getEmail(), "/queue/updates", update);
+            if (coachUser != null) messagingTemplate.convertAndSendToUser(coachUser.getEmail(), "/queue/updates", update);
         } catch (Exception e) {}
     }
 
     public List<Goal> getGoalsForClient(Long clientId) {
-        return goalRepository.findAllByClientIdOrderByCreatedAtDesc(clientId);
+        return goalRepository.findAllByClientIdAndDeletedByClientFalseOrderByCreatedAtDesc(clientId);
     }
 
     public List<Goal> getGoalsForCoach(Long coachId) {
         return goalRepository.findAllByCoachIdOrderByCreatedAtDesc(coachId);
+    }
+
+    public Goal markAsViewed(Long goalId, Long coachId) {
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> new IllegalArgumentException("Goal not found"));
+        if (!goal.getCoachId().equals(coachId)) {
+            throw new AccessDeniedException("Not authorized");
+        }
+        goal.setCoachViewed(true);
+        return goalRepository.save(goal);
     }
 
     public Goal toggleGoalStatus(Long goalId, boolean completed, Long userId) {

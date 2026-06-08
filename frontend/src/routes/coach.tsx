@@ -98,6 +98,9 @@ interface Goal {
   durationMinutes?: number;
   createdAt?: string;
   coachFeedback?: string;
+  createdByCoach?: boolean;
+  coachViewed?: boolean;
+  deletedByClient?: boolean;
 }
 interface FoodEntry {
   id: number;
@@ -304,6 +307,8 @@ function CoachDashboard() {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
   const [foodToDelete, setFoodToDelete] = useState<number | null>(null);
+  const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   const fetchClients = () => {
     api
@@ -371,11 +376,32 @@ function CoachDashboard() {
       api.get<FoodEntry[]>(`/food/client/${selected.id}`).then((r) => {
         if (r.data) setSelectedFoodEntries(r.data);
       });
+      api.get<WeeklyReport>(`/reports/latest/client/${selected.id}`)
+        .then((r) => setWeeklyReport(r.data))
+        .catch((err) => {
+          if (err.response?.status === 404) setWeeklyReport(null);
+        });
     } else {
       setSelectedGoals([]);
       setSelectedFoodEntries([]);
+      setWeeklyReport(null);
     }
   }, [selected]);
+
+  const generateReport = async () => {
+    if (!selected) return;
+    setIsGeneratingReport(true);
+    try {
+      const { data } = await api.post<WeeklyReport>(`/reports/generate/client/${selected.id}`);
+      setWeeklyReport(data);
+      toast.success("New AI coach brief generated!");
+    } catch (err) {
+      console.error("Report generation failed:", err);
+      toast.error("Failed to generate brief");
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
 
   const submitFoodFeedback = async (entryId: number, feedback: string) => {
     try {
@@ -526,7 +552,9 @@ function CoachDashboard() {
                   Coach {(user.name || "User").split(" ")[0]}
                 </span>
               </h1>
-              <p className="mt-1 text-sm md:text-base text-muted-foreground">{clients.length} active clients today.</p>
+              <p className="mt-1 text-sm md:text-base text-muted-foreground">
+                {clients.length} active clients today.
+              </p>
             </motion.div>
 
             <div className="mt-6 grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -579,12 +607,18 @@ function CoachDashboard() {
                       </div>
                       <div className="mt-4 md:mt-5 grid grid-cols-2 gap-4 border-t pt-4">
                         <div>
-                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">
+                            Goals
+                          </p>
                           <p className="text-lg md:text-xl font-bold">{c.activeGoals}</p>
                         </div>
                         <div>
-                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Completion</p>
-                          <p className="text-lg md:text-xl font-bold text-gradient-brand">{c.completion}%</p>
+                          <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">
+                            Completion
+                          </p>
+                          <p className="text-lg md:text-xl font-bold text-gradient-brand">
+                            {c.completion}%
+                          </p>
                         </div>
                       </div>
                     </Card>
@@ -608,7 +642,8 @@ function CoachDashboard() {
               }}
               className="mb-4"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" /> {chatting ? "Back to client details" : "Back to clients"}
+              <ArrowLeft className="mr-2 h-4 w-4" />{" "}
+              {chatting ? "Back to client details" : "Back to clients"}
             </Button>
 
             {!chatting ? (
@@ -637,17 +672,59 @@ function CoachDashboard() {
                 </div>
 
                 <div className="mt-6 grid gap-4 md:gap-6 grid-cols-2 md:grid-cols-3">
+                  <Card className="p-4 md:p-6 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900/50 col-span-2 md:col-span-3">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-indigo-500" />
+                        <h2 className="text-lg font-semibold">AI Coach Brief</h2>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={generateReport}
+                        disabled={isGeneratingReport}
+                        className="text-xs bg-white/50 dark:bg-black/50"
+                      >
+                        {isGeneratingReport
+                          ? "Analyzing..."
+                          : weeklyReport
+                            ? "Refresh"
+                            : "Generate Report"}
+                      </Button>
+                    </div>
+                    {weeklyReport ? (
+                      <div className="space-y-3">
+                        <p className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium">
+                          {weeklyReport.coachBrief}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground text-right">
+                          Report for: {new Date(weeklyReport.startDate).toLocaleDateString()} -{" "}
+                          {new Date(weeklyReport.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic py-2">
+                        Click "Generate Report" to get a high-level AI analysis of this client's
+                        progress over the last 7 days.
+                      </p>
+                    )}
+                  </Card>
+
                   <Card className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-1.5">
                       <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Progress</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">
+                        Progress
+                      </p>
                     </div>
                     <p className="text-xl md:text-2xl font-bold">{selected.completion}%</p>
                   </Card>
                   <Card className="p-4 md:p-6">
                     <div className="flex items-center gap-2 mb-1.5">
                       <CheckCircle2 className="h-4 w-4 md:h-5 md:w-5 text-primary shrink-0" />
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Goals</p>
+                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">
+                        Goals
+                      </p>
                     </div>
                     <p className="text-xl md:text-2xl font-bold">{selected.activeGoals}</p>
                   </Card>
@@ -657,7 +734,9 @@ function CoachDashboard() {
                     </p>
                     <div className="flex items-baseline gap-2">
                       <p className="text-lg md:text-2xl font-bold leading-none">Tracking</p>
-                      <span className="text-[10px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded">LIVE</span>
+                      <span className="text-[10px] text-primary font-bold bg-primary/10 px-1.5 py-0.5 rounded">
+                        LIVE
+                      </span>
                     </div>
                   </Card>
                 </div>
@@ -684,19 +763,37 @@ function CoachDashboard() {
                       selectedGoals.map((g) => (
                         <Card
                           key={g.id}
-                          className="relative flex flex-col p-4 md:p-5 group hover:shadow-glow transition-all border-border/50"
+                          className={cn(
+                            "relative flex flex-col p-4 md:p-5 group hover:shadow-glow transition-all border-border/50",
+                            !g.createdByCoach && "bg-indigo-50/30 border-indigo-100",
+                          )}
                         >
                           <div className="flex items-start justify-between mb-3">
-                            <button
-                              onClick={() => toggleGoal(g.id, g.status)}
-                              className="transition-colors hover:text-primary shrink-0"
-                            >
-                              {g.status === "COMPLETED" ? (
-                                <CheckCircle2 className="h-5 w-5 text-primary" />
-                              ) : (
-                                <Circle className="h-5 w-5 text-muted-foreground opacity-50" />
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => toggleGoal(g.id, g.status)}
+                                className="transition-colors hover:text-primary shrink-0"
+                              >
+                                {g.status === "COMPLETED" ? (
+                                  <CheckCircle2 className="h-5 w-5 text-primary" />
+                                ) : (
+                                  <Circle className="h-5 w-5 text-muted-foreground opacity-50" />
+                                )}
+                              </button>
+                              {!g.coachViewed && !g.createdByCoach && (
+                                <Badge className="bg-blue-500 text-white animate-pulse text-[7px] h-3.5 px-1 py-0 border-none">
+                                  NEW
+                                </Badge>
                               )}
-                            </button>
+                              {g.deletedByClient && (
+                                <Badge
+                                  variant="destructive"
+                                  className="text-[7px] h-3.5 px-1 py-0 uppercase font-black"
+                                >
+                                  User Deleted
+                                </Badge>
+                              )}
+                            </div>
                             <Badge
                               variant={g.priority === "HIGH" ? "destructive" : "secondary"}
                               className="text-[9px] h-4 py-0 font-bold"
@@ -706,11 +803,21 @@ function CoachDashboard() {
                           </div>
 
                           <div className="flex-1 min-w-0">
-                            <h3
-                              className={`font-semibold text-sm line-clamp-2 leading-tight ${g.status === "COMPLETED" ? "line-through text-muted-foreground" : ""}`}
-                            >
-                              {g.title}
-                            </h3>
+                            <div className="flex items-center gap-2">
+                              <h3
+                                className={`font-semibold text-sm line-clamp-2 leading-tight ${g.status === "COMPLETED" ? "line-through text-muted-foreground" : ""}`}
+                              >
+                                {g.title}
+                              </h3>
+                              {!g.createdByCoach && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[7px] h-3.5 bg-indigo-50 text-indigo-700 border-indigo-100 uppercase font-black tracking-tighter shrink-0"
+                                >
+                                  User Added
+                                </Badge>
+                              )}
+                            </div>
                             <div className="flex flex-wrap gap-1 mt-1.5">
                               <span className="text-[9px] text-muted-foreground bg-muted/80 px-1.5 py-0.5 rounded font-medium">
                                 {g.category}
@@ -731,7 +838,10 @@ function CoachDashboard() {
                               {g.dueDate && (
                                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground truncate">
                                   <Calendar className="h-2.5 w-2.5 shrink-0" />
-                                  {new Date(g.dueDate).toLocaleDateString([], { month: "short", day: "numeric" })}
+                                  {new Date(g.dueDate).toLocaleDateString([], {
+                                    month: "short",
+                                    day: "numeric",
+                                  })}
                                 </div>
                               )}
                               {g.startTime && (
@@ -793,7 +903,10 @@ function CoachDashboard() {
                       </Card>
                     ) : (
                       selectedFoodEntries.map((entry) => (
-                        <Card key={entry.id} className="group p-4 md:p-5 border-border/50 hover:border-primary/20 transition-colors">
+                        <Card
+                          key={entry.id}
+                          className="group p-4 md:p-5 border-border/50 hover:border-primary/20 transition-colors"
+                        >
                           <div className="flex gap-4">
                             {entry.imageUrl && (
                               <div className="w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden flex-shrink-0 bg-muted border border-border">
@@ -807,10 +920,13 @@ function CoachDashboard() {
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between mb-2 gap-2">
                                 <div className="min-w-0">
-                                  <h3 className="font-bold text-sm md:text-base truncate">{entry.foodName}</h3>
+                                  <h3 className="font-bold text-sm md:text-base truncate">
+                                    {entry.foodName}
+                                  </h3>
                                   <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 text-[10px] text-muted-foreground font-medium">
                                     <span className="flex items-center gap-1">
-                                      <Utensils className="h-2.5 w-2.5" /> {entry.portion || "Normal"}
+                                      <Utensils className="h-2.5 w-2.5" />{" "}
+                                      {entry.portion || "Normal"}
                                     </span>
                                     <span className="flex items-center gap-1 text-orange-600 font-bold">
                                       <Flame className="h-2.5 w-2.5" /> {entry.calories} kcal
@@ -999,9 +1115,7 @@ function CoachDashboard() {
         open={editDialogOpen}
         onOpenChange={setEditDialogOpen}
         onUpdate={(updated) => {
-          setSelectedGoals((prev) =>
-            prev.map((g) => (g.id === updated.id ? updated : g)),
-          );
+          setSelectedGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
           fetchClients();
         }}
       />
@@ -1014,16 +1128,12 @@ function CoachDashboard() {
         onDeleteFeedback={deleteGoalFeedback}
       />
 
-      <AlertDialog
-        open={!!goalToDelete}
-        onOpenChange={(o) => !o && setGoalToDelete(null)}
-      >
+      <AlertDialog open={!!goalToDelete} onOpenChange={(o) => !o && setGoalToDelete(null)}>
         <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This action cannot be undone. This will permanently delete the client's
-              goal.
+              This action cannot be undone. This will permanently delete the client's goal.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1038,15 +1148,13 @@ function CoachDashboard() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <AlertDialog
-        open={!!foodToDelete}
-        onOpenChange={(o) => !o && setFoodToDelete(null)}
-      >
+      <AlertDialog open={!!foodToDelete} onOpenChange={(o) => !o && setFoodToDelete(null)}>
         <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Food Log?</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this client's food entry? This action cannot be undone.
+              Are you sure you want to delete this client's food entry? This action cannot be
+              undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

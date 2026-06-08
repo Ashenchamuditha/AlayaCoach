@@ -25,7 +25,7 @@ export function OtpInput({ value, onChange, length = 6 }: OtpInputProps) {
     const newDigits = [...digits];
     // Only take the last character if multiple are entered (unless it's a paste)
     const char = val.slice(-1);
-    
+
     if (char && !/^\d$/.test(char)) return; // Only allow digits
 
     newDigits[index] = char;
@@ -58,7 +58,7 @@ export function OtpInput({ value, onChange, length = 6 }: OtpInputProps) {
 
     setDigits(updatedDigits);
     onChange(updatedDigits.join(""));
-    
+
     // Focus the last filled input or the last input
     const focusIndex = Math.min(newDigits.length, length - 1);
     inputRefs.current[focusIndex]?.focus();
@@ -79,7 +79,7 @@ export function OtpInput({ value, onChange, length = 6 }: OtpInputProps) {
           onKeyDown={(e) => handleKeyDown(i, e)}
           className={cn(
             "h-10 w-10 md:h-12 md:w-12 text-center text-lg font-bold p-0 focus:ring-2 focus:ring-primary focus:border-primary",
-            digit ? "border-primary bg-primary/5" : "border-border"
+            digit ? "border-primary bg-primary/5" : "border-border",
           )}
         />
       ))}

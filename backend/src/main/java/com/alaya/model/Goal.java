@@ -60,6 +60,15 @@ public class Goal {
     @Column(columnDefinition = "TEXT")
     private String coachFeedback;
 
+    @Builder.Default
+    private boolean createdByCoach = false;
+
+    @Builder.Default
+    private boolean coachViewed = false;
+
+    @Builder.Default
+    private boolean deletedByClient = false;
+
     public enum GoalStatus {
         ACTIVE, COMPLETED, CANCELLED
     }

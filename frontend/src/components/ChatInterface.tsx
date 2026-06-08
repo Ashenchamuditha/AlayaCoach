@@ -100,15 +100,16 @@ export function ChatInterface({ peerId, peerName }: Props) {
         className="relative flex-1 space-y-4 overflow-y-auto p-3 md:p-6 bg-[#fdfdfd] dark:bg-[#0c0c0d]"
       >
         {/* Background Image Overlay */}
-        <div 
+        <div
           className="absolute inset-0 z-0 pointer-events-none opacity-[0.05] dark:opacity-[0.03]"
           style={{
-            backgroundImage: "url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop')",
+            backgroundImage:
+              "url('https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=2070&auto=format&fit=crop')",
             backgroundSize: "cover",
             backgroundPosition: "center",
           }}
         />
-        
+
         <div className="relative z-10 space-y-4">
           <AnimatePresence initial={false}>
             {messages.map((m, i) => {
@@ -169,7 +170,11 @@ export function ChatInterface({ peerId, peerName }: Props) {
           placeholder="Type a message..."
           className="flex-1 text-sm h-9 md:h-10 px-3"
         />
-        <Button type="submit" size="icon" className="h-9 w-9 md:h-10 md:w-10 bg-gradient-brand text-white hover:opacity-90 shrink-0">
+        <Button
+          type="submit"
+          size="icon"
+          className="h-9 w-9 md:h-10 md:w-10 bg-gradient-brand text-white hover:opacity-90 shrink-0"
+        >
           <Send className="h-4 w-4" />
         </Button>
       </form>

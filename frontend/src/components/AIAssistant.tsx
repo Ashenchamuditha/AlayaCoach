@@ -122,11 +122,16 @@ export function AIAssistant({ initialPrompt }: Props) {
         </div>
         <div>
           <p className="text-xs md:text-sm font-bold">AI Assistant</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-tight">Always here to help</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground font-medium uppercase tracking-tight">
+            Always here to help
+          </p>
         </div>
       </div>
 
-      <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-3 md:p-6 pb-12">
+      <div
+        ref={scrollRef}
+        className="flex-1 space-y-4 overflow-y-auto bg-muted/30 p-3 md:p-6 pb-12"
+      >
         <AnimatePresence initial={false}>
           {messages.map((m) => {
             const mine = m.role === "user";
@@ -167,9 +172,9 @@ export function AIAssistant({ initialPrompt }: Props) {
       {messages.length <= 1 && (
         <div className="border-t border-border bg-background px-3 py-2">
           {!showSuggestions ? (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               onClick={() => setShowSuggestions(true)}
               className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-primary gap-1.5 h-7 px-2"
             >
@@ -190,7 +195,7 @@ export function AIAssistant({ initialPrompt }: Props) {
                   {s}
                 </button>
               ))}
-              <button 
+              <button
                 onClick={() => setShowSuggestions(false)}
                 className="text-[10px] md:text-xs font-bold text-muted-foreground ml-auto px-2"
               >

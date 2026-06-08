@@ -203,6 +203,18 @@ public class AIService {
         return res != null ? res : "I'm here to help! Keep pushing forward toward your goals.";
     }
 
+    public String generateWeeklyReportSummary(String userData) {
+        String systemPrompt = "You are a professional accountability coach and data analyst. " +
+                "Analyze the provided weekly data for a client (goals, food logs, check-ins). " +
+                "Generate two summaries:\n" +
+                "1. 'clientSummary': An encouraging, actionable summary for the client. Mention specific achievements and areas for improvement. Max 4 sentences.\n" +
+                "2. 'coachBrief': A high-level brief for the coach. Highlight if the client is struggling, why, and where the coach should focus. Max 3 sentences.\n" +
+                "Respond ONLY with a JSON object: {\"clientSummary\": \"...\", \"coachBrief\": \"...\"}";
+
+        String res = callGroqAI(systemPrompt, "Weekly Data Context: " + userData);
+        return res != null ? res : "{\"clientSummary\": \"Great work this week! Keep it up.\", \"coachBrief\": \"Client is making steady progress.\"}";
+    }
+
     private String callGroqAI(String systemPrompt, String userMessage) {
         WebClient client = webClientBuilder.build();
 

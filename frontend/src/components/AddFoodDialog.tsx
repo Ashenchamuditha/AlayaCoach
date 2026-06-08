@@ -67,17 +67,21 @@ export function AddFoodDialog({ onAdd }: Props) {
           canvas.height = height;
           const ctx = canvas.getContext("2d");
           ctx?.drawImage(img, 0, 0, width, height);
-          
-          canvas.toBlob((blob) => {
-            if (blob) {
-              const compressedFile = new File([blob], f.name, {
-                type: "image/jpeg",
-                lastModified: Date.now(),
-              });
-              setFile(compressedFile);
-              setPreview(canvas.toDataURL("image/jpeg", 0.7));
-            }
-          }, "image/jpeg", 0.7);
+
+          canvas.toBlob(
+            (blob) => {
+              if (blob) {
+                const compressedFile = new File([blob], f.name, {
+                  type: "image/jpeg",
+                  lastModified: Date.now(),
+                });
+                setFile(compressedFile);
+                setPreview(canvas.toDataURL("image/jpeg", 0.7));
+              }
+            },
+            "image/jpeg",
+            0.7,
+          );
         };
         img.src = event.target?.result as string;
       };
@@ -99,7 +103,7 @@ export function AddFoodDialog({ onAdd }: Props) {
     e.preventDefault();
 
     // Format: YYYY-MM-DDTHH:mm:ss
-    const entryTime = new Date().toISOString().split('.')[0];
+    const entryTime = new Date().toISOString().split(".")[0];
 
     setSubmitting(true);
     try {

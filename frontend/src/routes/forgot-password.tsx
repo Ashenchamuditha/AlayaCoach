@@ -14,9 +14,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
-    meta: [
-      { title: "Forgot Password — Alaya Master Coach" },
-    ],
+    meta: [{ title: "Forgot Password — Alaya Master Coach" }],
   }),
   component: ForgotPasswordPage,
 });
@@ -61,7 +59,7 @@ function ForgotPasswordPage() {
   const verifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (otp.length < 6) return;
-    
+
     setError(null);
     setLoading(true);
     try {
@@ -153,7 +151,8 @@ function ForgotPasswordPage() {
                   <Label className="block text-center text-sm font-medium">Verification Code</Label>
                   <OtpInput value={otp} onChange={setOtp} />
                   <p className="text-[10px] text-muted-foreground text-center">
-                    Reset code sent to <span className="font-semibold text-foreground">{email}</span>
+                    Reset code sent to{" "}
+                    <span className="font-semibold text-foreground">{email}</span>
                   </p>
                 </div>
                 {error && (
@@ -208,11 +207,7 @@ function ForgotPasswordPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       tabIndex={-1}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
@@ -259,7 +254,10 @@ function ForgotPasswordPage() {
             )}
 
             <div className="mt-6 border-t border-border/40 pt-4 text-center">
-              <Link to="/login" className="text-xs text-muted-foreground hover:text-primary transition">
+              <Link
+                to="/login"
+                className="text-xs text-muted-foreground hover:text-primary transition"
+              >
                 Return to Login
               </Link>
             </div>

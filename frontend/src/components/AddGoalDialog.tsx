@@ -80,17 +80,17 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
 
   const updateTime = (field: "startTime" | "endTime", value: string) => {
     const newForm = { ...form, [field]: value };
-    
+
     if (newForm.startTime && newForm.endTime) {
       const [sh, sm] = newForm.startTime.split(":").map(Number);
       const [eh, em] = newForm.endTime.split(":").map(Number);
       const start = sh * 60 + sm;
       let end = eh * 60 + em;
-      
+
       if (end < start) end += 24 * 60;
       newForm.durationMinutes = end - start;
     }
-    
+
     setForm(newForm);
   };
 
@@ -114,9 +114,10 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const fieldErrors: Record<string, string> = {};
-    if (!form.title || form.title.trim().length < 3) fieldErrors.title = "Title must be at least 3 chars";
+    if (!form.title || form.title.trim().length < 3)
+      fieldErrors.title = "Title must be at least 3 chars";
     if (!form.category) fieldErrors.category = "Category is required";
 
     if (Object.keys(fieldErrors).length > 0) {
@@ -129,14 +130,14 @@ export function AddGoalDialog({ onAdd, clientId }: Props) {
     try {
       const payload = { ...form, endDate: form.dueDate };
       const { data } = await api.post("/goals", payload);
-      
+
       toast.success("Successfully goal is added");
-      
+
       onAdd({
         ...payload,
         id: String(data.id),
       });
-      
+
       setOpen(false);
       reset();
     } catch (err) {

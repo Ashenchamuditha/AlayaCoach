@@ -32,7 +32,7 @@ function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [role, setRole] = useState<Role>("CLIENT");
   const [otp, setOtp] = useState("");
-  
+
   // Profile Data
   const [gender, setGender] = useState("MALE");
   const [birthDate, setBirthDate] = useState("");
@@ -73,7 +73,9 @@ function RegisterPage() {
       setStep("OTP");
     } catch (err: unknown) {
       if (axios.isAxiosError(err)) {
-        setError(err.response?.data?.message || "Failed to send OTP. Please check your SMTP settings.");
+        setError(
+          err.response?.data?.message || "Failed to send OTP. Please check your SMTP settings.",
+        );
       } else {
         setError("An unexpected error occurred");
       }
@@ -85,7 +87,7 @@ function RegisterPage() {
   const verifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     if (otp.length < 6) return;
-    
+
     setError(null);
     setLoading(true);
     try {
@@ -109,7 +111,7 @@ function RegisterPage() {
       setError("Passwords do not match");
       return;
     }
-    
+
     // Final validation
     if (!birthDate) {
       setError("Please select your birth date");
@@ -136,14 +138,14 @@ function RegisterPage() {
         targetWeight: isNaN(parsedTargetWeight) ? null : parsedTargetWeight,
         heightCm: isNaN(parsedHeight) ? null : parsedHeight,
         activityLevel,
-        primaryGoal
+        primaryGoal,
       };
 
       const { data } = await api.post<{
         token: string;
         user: { id: string; name: string; email: string; role: Role };
       }>("/auth/register", payload);
-      
+
       setAuth(data.user, data.token);
       navigate({ to: data.user.role === "COACH" ? "/coach" : "/app" });
     } catch (err: unknown) {
@@ -151,7 +153,8 @@ function RegisterPage() {
       let errorMsg = "An unexpected error occurred";
       if (axios.isAxiosError(err)) {
         console.error("Axios error response:", err.response?.data);
-        errorMsg = err.response?.data?.message || err.message || "Registration failed. Please try again.";
+        errorMsg =
+          err.response?.data?.message || err.message || "Registration failed. Please try again.";
       }
       setError(errorMsg);
     } finally {
@@ -215,8 +218,8 @@ function RegisterPage() {
                   <Label className="block text-center text-sm font-medium">Verification Code</Label>
                   <OtpInput value={otp} onChange={setOtp} />
                   <p className="text-[10px] text-muted-foreground text-center">
-                    We sent a code to <span className="font-semibold text-foreground">{email}</span>. 
-                    It expires in 5 minutes.
+                    We sent a code to <span className="font-semibold text-foreground">{email}</span>
+                    . It expires in 5 minutes.
                   </p>
                 </div>
                 {error && (
@@ -252,21 +255,27 @@ function RegisterPage() {
             )}
 
             {step === "DETAILS" && (
-              <form 
-                onSubmit={(e) => { 
-                  e.preventDefault(); 
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
                   if (password !== confirmPassword) {
                     setError("Passwords do not match");
                     return;
                   }
                   setError(null);
-                  setStep("BIOMETRICS"); 
-                }} 
+                  setStep("BIOMETRICS");
+                }}
                 className="mt-5 md:mt-6 space-y-4"
               >
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
-                  <Input id="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="John Doe" />
+                  <Input
+                    id="name"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="password">Create Password</Label>
@@ -287,11 +296,7 @@ function RegisterPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                       tabIndex={-1}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
@@ -340,8 +345,8 @@ function RegisterPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label>Gender</Label>
-                    <select 
-                      value={gender} 
+                    <select
+                      value={gender}
                       onChange={(e) => setGender(e.target.value)}
                       className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                     >
@@ -353,29 +358,55 @@ function RegisterPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="birthDate">Birth Date</Label>
-                    <Input id="birthDate" type="date" required value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                    <Input
+                      id="birthDate"
+                      type="date"
+                      required
+                      value={birthDate}
+                      onChange={(e) => setBirthDate(e.target.value)}
+                    />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-bold">Weight (kg)</Label>
-                    <Input type="number" step="0.1" required value={currentWeight} onChange={(e) => setCurrentWeight(e.target.value)} placeholder="70" />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={currentWeight}
+                      onChange={(e) => setCurrentWeight(e.target.value)}
+                      placeholder="70"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-bold">Target (kg)</Label>
-                    <Input type="number" step="0.1" required value={targetWeight} onChange={(e) => setTargetWeight(e.target.value)} placeholder="65" />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      required
+                      value={targetWeight}
+                      onChange={(e) => setTargetWeight(e.target.value)}
+                      placeholder="65"
+                    />
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-[10px] uppercase font-bold">Height (cm)</Label>
-                    <Input type="number" required value={heightCm} onChange={(e) => setHeightCm(e.target.value)} placeholder="175" />
+                    <Input
+                      type="number"
+                      required
+                      value={heightCm}
+                      onChange={(e) => setHeightCm(e.target.value)}
+                      placeholder="175"
+                    />
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
                   <Label>Activity Level</Label>
-                  <select 
-                    value={activityLevel} 
+                  <select
+                    value={activityLevel}
                     onChange={(e) => setActivityLevel(e.target.value)}
                     className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >
@@ -389,8 +420,8 @@ function RegisterPage() {
 
                 <div className="space-y-1.5">
                   <Label>Primary Goal</Label>
-                  <select 
-                    value={primaryGoal} 
+                  <select
+                    value={primaryGoal}
                     onChange={(e) => setPrimaryGoal(e.target.value)}
                     className="w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                   >

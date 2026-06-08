@@ -1,5 +1,15 @@
 import { useState, useEffect } from "react";
-import { Bell, Check, Trash2, MessageSquare, Utensils, Target, Bot, Sparkles, X } from "lucide-react";
+import {
+  Bell,
+  Check,
+  Trash2,
+  MessageSquare,
+  Utensils,
+  Target,
+  Bot,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,7 +36,14 @@ interface Notification {
   id: number;
   title: string;
   message: string;
-  type: "MESSAGE" | "FOOD_FEEDBACK" | "GOAL_UPDATE" | "GOAL_COMPLETE" | "NEW_CLIENT" | "AI_SUGGESTION" | "SYSTEM";
+  type:
+    | "MESSAGE"
+    | "FOOD_FEEDBACK"
+    | "GOAL_UPDATE"
+    | "GOAL_COMPLETE"
+    | "NEW_CLIENT"
+    | "AI_SUGGESTION"
+    | "SYSTEM";
   relatedId?: string;
   read: boolean;
   createdAt: string;
@@ -70,7 +87,7 @@ export function NotificationCenter() {
             },
           });
         }
-      }
+      },
     );
     ws.activate();
     return () => {
@@ -81,9 +98,7 @@ export function NotificationCenter() {
   const markAsRead = async (id: number) => {
     try {
       await api.patch(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, read: true } : n))
-      );
+      setNotifications((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)));
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (err) {
       console.error("Failed to mark as read:", err);
@@ -149,13 +164,20 @@ export function NotificationCenter() {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case "MESSAGE": return <MessageSquare className="h-4 w-4 text-blue-500" />;
-      case "FOOD_FEEDBACK": return <Utensils className="h-4 w-4 text-orange-500" />;
-      case "GOAL_COMPLETE": return <Target className="h-4 w-4 text-green-500" />;
-      case "GOAL_UPDATE": return <Target className="h-4 w-4 text-primary" />;
-      case "AI_SUGGESTION": return <Bot className="h-4 w-4 text-purple-500" />;
-      case "NEW_CLIENT": return <Sparkles className="h-4 w-4 text-yellow-500" />;
-      default: return <Bell className="h-4 w-4 text-muted-foreground" />;
+      case "MESSAGE":
+        return <MessageSquare className="h-4 w-4 text-blue-500" />;
+      case "FOOD_FEEDBACK":
+        return <Utensils className="h-4 w-4 text-orange-500" />;
+      case "GOAL_COMPLETE":
+        return <Target className="h-4 w-4 text-green-500" />;
+      case "GOAL_UPDATE":
+        return <Target className="h-4 w-4 text-primary" />;
+      case "AI_SUGGESTION":
+        return <Bot className="h-4 w-4 text-purple-500" />;
+      case "NEW_CLIENT":
+        return <Sparkles className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <Bell className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -176,7 +198,12 @@ export function NotificationCenter() {
           <div className="flex items-center justify-between p-4 border-b border-border/50 bg-muted/30">
             <h3 className="font-bold text-sm">Notifications</h3>
             {unreadCount > 0 && (
-              <Button variant="ghost" size="sm" onClick={markAllAsRead} className="h-7 text-[10px] uppercase font-bold text-primary">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={markAllAsRead}
+                className="h-7 text-[10px] uppercase font-bold text-primary"
+              >
                 Mark all as read
               </Button>
             )}
@@ -196,16 +223,23 @@ export function NotificationCenter() {
                     !n.read ? "bg-primary/5 hover:bg-primary/10" : "hover:bg-muted/50"
                   }`}
                 >
-                  <div className={`mt-1 p-2 rounded-lg ${!n.read ? "bg-white shadow-sm" : "bg-muted"}`}>
+                  <div
+                    className={`mt-1 p-2 rounded-lg ${!n.read ? "bg-white shadow-sm" : "bg-muted"}`}
+                  >
                     {getIcon(n.type)}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-start justify-between gap-2">
-                      <p className={`text-sm leading-none ${!n.read ? "font-bold" : "font-medium"}`}>
+                      <p
+                        className={`text-sm leading-none ${!n.read ? "font-bold" : "font-medium"}`}
+                      >
                         {n.title}
                       </p>
                       <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                        {new Date(n.createdAt).toLocaleDateString([], { month: "short", day: "numeric" })}
+                        {new Date(n.createdAt).toLocaleDateString([], {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
@@ -232,13 +266,17 @@ export function NotificationCenter() {
               {selectedNotification && new Date(selectedNotification.createdAt).toLocaleString()}
             </DialogDescription>
           </DialogHeader>
-          <div className="py-4 text-sm leading-relaxed">
-            {selectedNotification?.message}
-          </div>
+          <div className="py-4 text-sm leading-relaxed">{selectedNotification?.message}</div>
           <DialogFooter className="flex-col sm:flex-row gap-2">
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">Close</Button>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
+              Close
+            </Button>
             {selectedNotification?.type === "AI_SUGGESTION" ? (
-              <Button 
+              <Button
                 onClick={() => {
                   setIsDialogOpen(false);
                   const contextMsg = `Regarding the advice: "${selectedNotification.message}"\n\nHow can I implement this?`;
@@ -249,7 +287,9 @@ export function NotificationCenter() {
                 Chat with AI
               </Button>
             ) : (
-              <Button onClick={handleViewAction} className="w-full sm:w-auto">View Details</Button>
+              <Button onClick={handleViewAction} className="w-full sm:w-auto">
+                View Details
+              </Button>
             )}
           </DialogFooter>
         </DialogContent>

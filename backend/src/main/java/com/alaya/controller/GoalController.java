@@ -140,6 +140,13 @@ public class GoalController {
         return ResponseEntity.ok(goalService.completeGoal(goalId, coach.getId()));
     }
 
+    @PatchMapping("/{goalId}/viewed")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Goal> markAsViewed(@PathVariable Long goalId,
+                                             @AuthenticationPrincipal User coach) {
+        return ResponseEntity.ok(goalService.markAsViewed(goalId, coach.getId()));
+    }
+
     @PostMapping("/{goalId}/feedback")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<Goal> addFeedback(@PathVariable Long goalId,

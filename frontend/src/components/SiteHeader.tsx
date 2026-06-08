@@ -1,5 +1,16 @@
 import { Link, useRouterState, useNavigate, useSearch } from "@tanstack/react-router";
-import { Moon, Sun, Sparkles, LayoutDashboard, Utensils, Bot, MessageSquare, LogOut, Menu, ChevronDown } from "lucide-react";
+import {
+  Moon,
+  Sun,
+  Sparkles,
+  LayoutDashboard,
+  Utensils,
+  Bot,
+  MessageSquare,
+  LogOut,
+  Menu,
+  ChevronDown,
+} from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,7 +40,7 @@ export function SiteHeader() {
   const logout = useAuth((s) => s.logout);
   const path = useRouterState({ select: (r) => r.location.pathname });
   const navigate = useNavigate();
-  
+
   // Safe search param access
   let activeTab = "overview";
   try {
@@ -67,7 +78,7 @@ export function SiteHeader() {
       <div className="container mx-auto flex h-16 items-center justify-between px-3 md:px-4">
         {/* Left Section: Logo & Mobile Dropdown */}
         <div className="flex items-center gap-1 md:gap-1.5">
-          <button 
+          <button
             onClick={() => handleNavClick("overview")}
             className="flex items-center gap-2 shrink-0 transition-transform active:scale-95"
           >
@@ -85,15 +96,22 @@ export function SiteHeader() {
               <div className="h-4 w-px bg-border/60 mx-1" />
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="h-8 gap-1 px-1.5 text-muted-foreground hover:text-foreground">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 gap-1 px-1.5 text-muted-foreground hover:text-foreground"
+                  >
                     <span className="text-[10px] font-bold uppercase tracking-wider">Guide</span>
                     <ChevronDown className="h-3 w-3 opacity-50" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-56 mt-2 dark:bg-[#0a0a0b] border-border/50">
+                <DropdownMenuContent
+                  align="start"
+                  className="w-56 mt-2 dark:bg-[#0a0a0b] border-border/50"
+                >
                   {navItems.map((item) => (
-                    <DropdownMenuItem 
-                      key={item.value} 
+                    <DropdownMenuItem
+                      key={item.value}
                       onClick={() => handleNavClick(item.value)}
                       className="flex items-center gap-3 h-11 cursor-pointer"
                     >
@@ -143,10 +161,16 @@ export function SiteHeader() {
         {/* Right Section: Theme, Notifications & Auth */}
         <div className="flex items-center gap-0.5 md:gap-2">
           {user && <NotificationCenter />}
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme" className="h-8 w-8 md:h-10 md:w-10">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggle}
+            aria-label="Toggle theme"
+            className="h-8 w-8 md:h-10 md:w-10"
+          >
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
-          
+
           {user ? (
             <div className="flex items-center gap-0.5 md:gap-2">
               <Button
@@ -172,7 +196,11 @@ export function SiteHeader() {
               <Button asChild variant="ghost" size="sm">
                 <Link to="/login">Login</Link>
               </Button>
-              <Button asChild size="sm" className="bg-gradient-brand text-white shadow-glow hover:opacity-90">
+              <Button
+                asChild
+                size="sm"
+                className="bg-gradient-brand text-white shadow-glow hover:opacity-90"
+              >
                 <Link to="/register">Sign Up</Link>
               </Button>
             </div>
@@ -191,7 +219,7 @@ export function SiteHeader() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleLogout}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >

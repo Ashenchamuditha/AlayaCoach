@@ -74,7 +74,9 @@ function LoginPage() {
         >
           <Card className="p-6 md:p-8 shadow-glow">
             <h1 className="text-xl md:text-2xl font-bold">Welcome back</h1>
-            <p className="mt-1 text-xs md:text-sm text-muted-foreground">Sign in to continue your journey.</p>
+            <p className="mt-1 text-xs md:text-sm text-muted-foreground">
+              Sign in to continue your journey.
+            </p>
             <form onSubmit={submit} className="mt-5 md:mt-6 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="email">Email</Label>
@@ -90,10 +92,7 @@ function LoginPage() {
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Link
-                    to="/forgot-password"
-                    className="text-xs text-primary hover:underline"
-                  >
+                  <Link to="/forgot-password" className="text-xs text-primary hover:underline">
                     Forgot password?
                   </Link>
                 </div>
@@ -112,11 +111,7 @@ function LoginPage() {
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
                     tabIndex={-1}
                   >
-                    {showPassword ? (
-                      <EyeOff className="h-4 w-4" />
-                    ) : (
-                      <Eye className="h-4 w-4" />
-                    )}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -140,13 +135,10 @@ function LoginPage() {
                 ← Back to Home
               </Link>
             </div>
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-            
-            </p>
+            <p className="mt-4 text-center text-xs text-muted-foreground"></p>
           </Card>
         </motion.div>
       </main>
     </div>
   );
 }
-
