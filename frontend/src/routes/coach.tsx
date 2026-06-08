@@ -456,6 +456,7 @@ function CoachDashboard() {
     try {
       await api.delete(`/goals/${goalToDelete}`);
       setSelectedGoals((prev) => prev.filter((g) => g.id !== goalToDelete));
+      toast.success("Goal deleted");
       fetchClients();
     } catch {
       console.error("Failed to delete goal");
@@ -465,13 +466,14 @@ function CoachDashboard() {
   };
 
   const confirmDeleteFood = async () => {
-    if (!foodToDelete) return;
+    if (foodToDelete === null) return;
     try {
-      await api.delete(`/food/${foodToDelete}`);
+      await api.delete(`/food/delete/${foodToDelete}`);
       setSelectedFoodEntries((prev) => prev.filter((f) => f.id !== foodToDelete));
       toast.success("Food log deleted");
       fetchClients();
-    } catch {
+    } catch (err) {
+      console.error("Failed to delete food log:", err);
       toast.error("Failed to delete food log");
     } finally {
       setFoodToDelete(null);

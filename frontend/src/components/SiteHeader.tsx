@@ -141,14 +141,14 @@ export function SiteHeader() {
         )}
 
         {/* Right Section: Theme, Notifications & Auth */}
-        <div className="flex items-center gap-1 md:gap-2">
+        <div className="flex items-center gap-0.5 md:gap-2">
           {user && <NotificationCenter />}
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme">
+          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Toggle theme" className="h-8 w-8 md:h-10 md:w-10">
             {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
           
           {user ? (
-            <div className="flex items-center gap-1 md:gap-2">
+            <div className="flex items-center gap-0.5 md:gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -161,10 +161,10 @@ export function SiteHeader() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setShowLogoutConfirm(true)}
-                className="md:hidden text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+                className="md:hidden h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
                 title="Logout"
               >
-                <LogOut className="h-5 w-5 stroke-[2.5px]" />
+                <LogOut className="h-4 w-4 stroke-[2.5px]" />
               </Button>
             </div>
           ) : path !== "/login" && path !== "/register" ? (

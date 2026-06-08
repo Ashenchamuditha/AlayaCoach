@@ -93,6 +93,43 @@ public class EmailService {
         sendHtmlEmail(to, subject, html);
     }
 
+    public void sendGoalAddedEmail(String to, String userName, String goalTitle, String creatorName) {
+        String subject = "New Goal Added to Your Alaya Dashboard";
+        String html = getGoalTemplate(userName, goalTitle, creatorName);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    private String getGoalTemplate(String userName, String goalTitle, String creatorName) {
+        String creatorText = creatorName != null ? "added by <strong>" + creatorName + "</strong>" : "added to your profile";
+        return "<!DOCTYPE html>" +
+               "<html>" +
+               "<head>" +
+               "<style>" +
+               "  body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; text-align: left; color: #333333; }" +
+               "  .goal-box { background-color: #f8fafc; border-left: 4px solid #6366f1; border-radius: 4px; padding: 20px; margin: 25px 0; font-size: 18px; font-weight: 600; color: #1e293b; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }" +
+               "</style>" +
+               "</head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Alaya Master Coach</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hello " + userName + ",</p>" +
+               "      <p>A new goal has been " + creatorText + ":</p>" +
+               "      <div class='goal-box'>" + goalTitle + "</div>" +
+               "      <p>Log in to your dashboard to track your progress and stay accountable!</p>" +
+               "      <center><a href='https://alaya-master-coach.vercel.app' class='button'>View Dashboard</a></center>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body>" +
+               "</html>";
+    }
+
     private String getOtpTemplate(String title, String otp, String action) {
         return "<!DOCTYPE html>" +
                "<html>" +

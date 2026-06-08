@@ -459,13 +459,15 @@ function ClientDashboard() {
   };
 
   const confirmDeleteFood = async () => {
-    if (!foodToDelete) return;
+    if (foodToDelete === null) return;
     try {
-      await api.delete(`/food/${foodToDelete}`);
+      await api.delete(`/food/delete/${foodToDelete}`);
       setFoodEntries((prev) => prev.filter((f) => f.id !== foodToDelete));
       toast.success("Food log deleted");
       fetchDashboard();
-    } catch {
+      fetchFoodEntries();
+    } catch (err) {
+      console.error("Failed to delete food log:", err);
       toast.error("Failed to delete food log");
     } finally {
       setFoodToDelete(null);
@@ -507,9 +509,9 @@ function ClientDashboard() {
     .reduce((acc, e) => acc + (e.calories || 0), 0);
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col bg-background overflow-x-hidden">
       <SiteHeader />
-      <main className="container mx-auto flex-1 flex flex-col px-4 py-4 md:py-8">
+      <main className="container mx-auto flex-1 flex flex-col px-4 py-4 md:py-8 overflow-x-hidden">
         <div className="grid gap-6 flex-1">
           {/* Greeting Card - Only show on Overview and Nutrition */}
           {(activeTab === "overview" || activeTab === "nutrition") && (
@@ -766,6 +768,38 @@ function ClientDashboard() {
                 </div>
               </Card>
 
+              {/* Mobile-only AI Tips - Re-styled for better appeal and visibility at top */}
+              <div className="lg:hidden space-y-3">
+                <div className="flex items-center justify-between px-1">
+                  <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Daily Insights</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={cn("h-7 w-7 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                    onClick={refreshTips}
+                    disabled={isRefreshingTips}
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="grid gap-3">
+                  {dailyTips.length > 0 ? (
+                    dailyTips.map((tip) => (
+                      <div key={tip.id} className="flex gap-3 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
+                        <div className="h-7 w-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <Sparkles className="h-3.5 w-3.5 text-primary" />
+                        </div>
+                        <p className="text-[11px] font-medium leading-relaxed">{tip.content}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="w-full py-8 text-center border rounded-2xl border-dashed">
+                      <p className="text-[10px] text-muted-foreground italic">AI is crafting your tips...</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-xl font-bold tracking-tight">Food Log</h2>
@@ -803,7 +837,7 @@ function ClientDashboard() {
                                     <Button
                                       size="icon"
                                       variant="ghost"
-                                      className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                      className="h-6 w-6 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                                       onClick={(e) => {
                                         e.stopPropagation();
                                         setFoodToDelete(entry.id);
@@ -887,38 +921,6 @@ function ClientDashboard() {
                         <p className="text-[10px] text-muted-foreground/60 max-w-[180px] mt-1">Get AI insights on your nutrition goals.</p>
                       </div>
                     )}
-
-                    {/* Mobile-only AI Tips - Re-styled for better appeal */}
-                    <div className="lg:hidden mt-8">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
-                          onClick={refreshTips}
-                          disabled={isRefreshingTips}
-                        >
-                          <Sparkles className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <div className="grid gap-3">
-                        {dailyTips.length > 0 ? (
-                          dailyTips.map((tip) => (
-                            <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
-                              <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                                <Sparkles className="h-4 w-4 text-primary" />
-                              </div>
-                              <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="py-10 text-center border rounded-2xl border-dashed">
-                            <p className="text-xs text-muted-foreground italic">AI is crafting your tips...</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
                   </div>
                   
                   {/* Desktop AI Tips - Styled consistently */}

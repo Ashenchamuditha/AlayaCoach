@@ -62,28 +62,27 @@ public class FoodEntryController {
 
     @GetMapping("/client/{clientId}")
     @PreAuthorize("hasRole('COACH')")
-    public ResponseEntity<List<FoodEntry>> clientFoodEntries(@PathVariable Long clientId) {
+    public ResponseEntity<List<FoodEntry>> clientFoodEntries(@PathVariable("clientId") Long clientId) {
         return ResponseEntity.ok(foodEntryService.getClientFoodEntries(clientId));
     }
 
-    @PostMapping("/{id}/feedback")
+    @PostMapping("/{entryId}/feedback")
     @PreAuthorize("hasRole('COACH')")
-    public ResponseEntity<FoodEntry> addCoachFeedback(@PathVariable Long id,
+    public ResponseEntity<FoodEntry> addCoachFeedback(@PathVariable("entryId") Long entryId,
                                                       @RequestBody CoachFeedbackRequest req) {
-        return ResponseEntity.ok(foodEntryService.addCoachFeedback(id, req.getFeedback()));
+        return ResponseEntity.ok(foodEntryService.addCoachFeedback(entryId, req.getFeedback()));
     }
 
-    @DeleteMapping("/{id}/feedback")
+    @DeleteMapping("/{entryId}/feedback")
     @PreAuthorize("hasRole('COACH')")
-    public ResponseEntity<FoodEntry> deleteCoachFeedback(@PathVariable Long id) {
-        return ResponseEntity.ok(foodEntryService.deleteCoachFeedback(id));
+    public ResponseEntity<FoodEntry> deleteCoachFeedback(@PathVariable("entryId") Long entryId) {
+        return ResponseEntity.ok(foodEntryService.deleteCoachFeedback(entryId));
     }
 
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('CLIENT', 'COACH')")
-    public ResponseEntity<Void> deleteFoodEntry(@PathVariable Long id,
+    @DeleteMapping("/delete/{entryId}")
+    public ResponseEntity<Void> deleteFoodEntry(@PathVariable("entryId") Long entryId,
                                                @AuthenticationPrincipal User user) {
-        foodEntryService.deleteFoodEntry(id, user.getId(), user.getRole());
+        foodEntryService.deleteFoodEntry(entryId, user.getId(), user.getRole());
         return ResponseEntity.noContent().build();
     }
 }

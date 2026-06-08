@@ -9,6 +9,7 @@ import {
 import { useEffect } from "react";
 import { useTheme } from "@/store/theme";
 import { useAuth } from "@/store/auth";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -86,6 +87,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
 }

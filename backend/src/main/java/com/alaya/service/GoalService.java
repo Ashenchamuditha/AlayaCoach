@@ -22,6 +22,7 @@ public class GoalService {
     private final SimpMessagingTemplate messagingTemplate;
     private final CheckinService checkinService;
     private final NotificationService notificationService;
+    private final EmailService emailService;
 
     private void notifyUpdate(Goal goal) {
         try {
@@ -82,15 +83,33 @@ public class GoalService {
                 .targetUnit(targetUnit != null ? targetUnit : "")
                 .build());
         
-        // Notify client if the goal was created by their coach
-        if (creatorId != null && !creatorId.equals(clientId)) {
+        // Notify client and send email
+        User client = userRepository.findById(clientId).orElse(null);
+        if (client != null) {
+            String creatorName = null;
+            if (creatorId != null && !creatorId.equals(clientId)) {
+                User creator = userRepository.findById(creatorId).orElse(null);
+                if (creator != null) {
+                    creatorName = creator.getFullName();
+                }
+            }
+
+            // In-system notification
+            String notificationTitle = creatorName != null ? "New Goal Assigned by Coach" : "New Goal Added";
+            String notificationMsg = creatorName != null 
+                ? "Your coach " + creatorName + " has assigned a new goal to you: " + title
+                : "You have added a new goal: " + title;
+            
             notificationService.createNotification(
                     clientId,
-                    "New Goal Assigned",
-                    "Your coach has assigned a new goal to you: " + title,
+                    notificationTitle,
+                    notificationMsg,
                     com.alaya.model.Notification.NotificationType.GOAL_UPDATE,
                     String.valueOf(goal.getId())
             );
+
+            // Email notification
+            emailService.sendGoalAddedEmail(client.getEmail(), client.getFullName(), title, creatorName);
         }
 
         notifyUpdate(goal);

@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
@@ -119,6 +120,7 @@ public class FoodEntryService {
         return foodEntryRepository.findAllByClientIdOrderByEntryTimeDesc(clientId);
     }
 
+    @Transactional
     public void deleteFoodEntry(Long entryId, Long userId, Role role) {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new RuntimeException("Food entry not found"));
@@ -132,6 +134,7 @@ public class FoodEntryService {
         foodEntryRepository.delete(entry);
     }
 
+    @Transactional
     public FoodEntry addCoachFeedback(Long entryId, String feedback) {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new RuntimeException("Food entry not found"));
@@ -160,6 +163,7 @@ public class FoodEntryService {
         return saved;
     }
 
+    @Transactional
     public FoodEntry deleteCoachFeedback(Long entryId) {
         FoodEntry entry = foodEntryRepository.findById(entryId)
                 .orElseThrow(() -> new RuntimeException("Food entry not found"));
