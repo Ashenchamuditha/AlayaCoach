@@ -3,11 +3,13 @@ package com.alaya.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.alaya.model.FoodEntry;
+import com.alaya.model.Role;
 import com.alaya.repository.FoodEntryRepository;
 import com.alaya.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -115,6 +117,19 @@ public class FoodEntryService {
 
     public List<FoodEntry> getClientFoodEntries(Long clientId) {
         return foodEntryRepository.findAllByClientIdOrderByEntryTimeDesc(clientId);
+    }
+
+    public void deleteFoodEntry(Long entryId, Long userId, Role role) {
+        FoodEntry entry = foodEntryRepository.findById(entryId)
+                .orElseThrow(() -> new RuntimeException("Food entry not found"));
+
+        if (role == Role.CLIENT) {
+            if (!entry.getClientId().equals(userId)) {
+                throw new AccessDeniedException("Not authorized to delete this food entry");
+            }
+        }
+        
+        foodEntryRepository.delete(entry);
     }
 
     public FoodEntry addCoachFeedback(Long entryId, String feedback) {

@@ -141,7 +141,7 @@ function LoginPage() {
               </Link>
             </div>
             <p className="mt-4 text-center text-xs text-muted-foreground">
-              Tip: include "coach" in email to log in as coach (demo).
+            
             </p>
           </Card>
         </motion.div>

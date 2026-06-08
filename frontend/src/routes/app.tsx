@@ -263,6 +263,7 @@ function ClientDashboard() {
   const [error, setError] = useState<string | null>(null);
   const [previewGoal, setPreviewGoal] = useState<Goal | null>(null);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  const [foodToDelete, setFoodToDelete] = useState<number | null>(null);
   const [isRefreshingTips, setIsRefreshingTips] = useState(false);
   const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set());
 
@@ -454,6 +455,20 @@ function ClientDashboard() {
       toast.error("Failed to delete goal");
     } finally {
       setGoalToDelete(null);
+    }
+  };
+
+  const confirmDeleteFood = async () => {
+    if (!foodToDelete) return;
+    try {
+      await api.delete(`/food/${foodToDelete}`);
+      setFoodEntries((prev) => prev.filter((f) => f.id !== foodToDelete));
+      toast.success("Food log deleted");
+      fetchDashboard();
+    } catch {
+      toast.error("Failed to delete food log");
+    } finally {
+      setFoodToDelete(null);
     }
   };
 
@@ -717,31 +732,43 @@ function ClientDashboard() {
           )}
 
           {activeTab === "nutrition" && (
-            <div className="space-y-4 md:space-y-6">
-              <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-3">
-                <Card className="p-4 md:p-6 bg-gradient-soft border-primary/10">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 shadow-sm shrink-0">
-                      <Flame className="h-5 w-5" />
-                    </div>
+            <div className="space-y-6">
+              {/* Daily Summary Card */}
+              <Card className="overflow-hidden border-none bg-gradient-brand text-white shadow-lg">
+                <div className="p-5 md:p-8">
+                  <div className="flex items-center justify-between mb-4">
                     <div>
-                      <p className="text-[10px] md:text-xs text-muted-foreground uppercase font-bold">Total Intake</p>
-                      <p className="text-xl md:text-2xl font-bold">
+                      <p className="text-xs font-bold uppercase tracking-wider opacity-80">Today's Intake</p>
+                      <h2 className="text-3xl md:text-4xl font-extrabold mt-1">
                         {todayCalories}
-                        <span className="ml-1 text-xs md:text-sm font-normal text-muted-foreground uppercase">kcal</span>
-                      </p>
+                        <span className="ml-1.5 text-sm md:text-lg font-medium opacity-80">kcal</span>
+                      </h2>
+                    </div>
+                    <div className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                      <Flame className="h-6 w-6 text-white" />
                     </div>
                   </div>
-                </Card>
-                <Card className="p-4 md:p-6 sm:col-span-2">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="min-w-0">
-                      <h2 className="text-lg font-semibold truncate">Food Log</h2>
-                      <p className="text-xs text-muted-foreground hidden sm:block">Track your meals for AI insights.</p>
+                  
+                  {/* Calorie Progress Bar (Assuming 2500 as target for demo) */}
+                  <div className="space-y-2">
+                    <div className="flex justify-between text-[10px] font-bold uppercase tracking-tighter">
+                      <span>Progress</span>
+                      <span>{Math.round((todayCalories / 2500) * 100)}%</span>
                     </div>
-                    <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
+                    <div className="h-2 w-full bg-white/20 rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min((todayCalories / 2500) * 100, 100)}%` }}
+                        className="h-full bg-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                      />
+                    </div>
                   </div>
-                </Card>
+                </div>
+              </Card>
+
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold tracking-tight">Food Log</h2>
+                <AddFoodDialog onAdd={(entry) => setFoodEntries([entry, ...(foodEntries || [])])} />
               </div>
 
               <div className="grid gap-6 lg:grid-cols-3">
@@ -752,133 +779,165 @@ function ClientDashboard() {
                         key={entry.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="rounded-xl border border-border/50 bg-card p-3 md:p-4 shadow-sm hover:border-primary/20 transition-colors"
+                        className="group relative rounded-2xl border border-border/40 bg-card p-3 md:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                       >
-                        <div className="flex gap-3 md:gap-4">
-                          {entry.imageUrl && (
-                            <div className="w-16 h-16 md:w-24 md:h-24 rounded-lg overflow-hidden border border-border shrink-0">
-                              <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover" />
+                        <div className="flex gap-4">
+                          {entry.imageUrl ? (
+                            <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl overflow-hidden border border-border/50 shrink-0 shadow-sm">
+                              <img src={getMediaUrl(entry.imageUrl)} alt={entry.foodName} className="w-full h-full object-cover transition-transform group-hover:scale-110" />
+                            </div>
+                          ) : (
+                            <div className="w-20 h-20 md:w-28 md:h-28 rounded-xl bg-muted/30 flex items-center justify-center shrink-0 border border-dashed">
+                              <Utensils className="h-8 w-8 text-muted-foreground/30" />
                             </div>
                           )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="flex flex-col gap-1">
-                                <h3 className="font-bold text-sm md:text-base truncate">{entry.foodName}</h3>
-                                {entry.classification && (
-                                  <Badge 
-                                    className={cn(
-                                      "w-fit text-[8px] h-3.5 px-1.5",
-                                      entry.classification === "HEALTHY" 
-                                        ? "bg-green-100 text-green-700 hover:bg-green-100" 
-                                        : "bg-red-100 text-red-700 hover:bg-red-100"
-                                    )}
-                                  >
-                                    {entry.classification === "HEALTHY" ? "Healthy choice" : "Harmful if frequent"}
+                          <div className="flex-1 min-w-0 flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-start justify-between gap-2">
+                                <h3 className="font-bold text-base md:text-lg truncate leading-tight">{entry.foodName}</h3>
+                                <div className="flex items-center gap-2">
+                                  <Badge variant="outline" className="text-[9px] md:text-[10px] shrink-0 font-bold bg-muted/50 border-none">
+                                    {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Just now"}
                                   </Badge>
-                                )}
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFoodToDelete(entry.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
-                              <Badge variant="outline" className="text-[8px] md:text-[9px] shrink-0 font-bold">
-                                {entry.entryTime ? new Date(entry.entryTime).toLocaleDateString([], { month: "short", day: "numeric" }) : "Today"}
-                              </Badge>
+                              <div className="mt-1 flex flex-wrap gap-2 text-[10px] md:text-xs font-bold">
+                                <span className="flex items-center gap-1 text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
+                                  <Flame className="h-3 w-3" /> {entry.calories || 0} kcal
+                                </span>
+                                <span className="text-muted-foreground bg-muted/50 px-2 py-0.5 rounded-full">
+                                  {entry.portion || "Normal portion"}
+                                </span>
+                              </div>
                             </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1.5 text-[9px] md:text-xs text-muted-foreground font-medium">
-                              <span className="flex items-center gap-1"><Utensils className="h-3 w-3" /> {entry.portion || "Normal"}</span>
-                              <span className="flex items-center gap-1 text-orange-600 font-bold"><Flame className="h-3 w-3" /> {entry.calories || 0} kcal</span>
-                              <span className="flex items-center gap-1 bg-muted/30 px-1.5 py-0.5 rounded">
-                                <Clock className="h-3 w-3" /> {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "N/A"}
-                              </span>
-                            </div>
-                            {entry.aiFeedback && (
-                              <div className="mt-2.5 rounded-lg bg-primary/5 p-2 md:p-3 border border-primary/10 italic text-[10px] md:text-sm text-foreground/80 leading-relaxed">
-                                "{entry.aiFeedback}"
-                                {entry.chatStarter && (
-                                  <div className="mt-2 flex justify-end">
-                                    <Button 
-                                      variant="ghost" 
-                                      size="sm" 
-                                      className="h-6 text-[10px] text-primary hover:text-primary hover:bg-primary/10 font-bold gap-1"
-                                      onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
-                                    >
-                                      Ask AI: {entry.chatStarter}
-                                      <ChevronRight className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                )}
+
+                            {entry.classification && (
+                              <div className={cn(
+                                "mt-2 w-fit px-2 py-0.5 rounded text-[9px] md:text-[10px] font-bold uppercase tracking-widest",
+                                entry.classification === "HEALTHY" 
+                                  ? "bg-green-100 text-green-700" 
+                                  : "bg-red-100 text-red-700"
+                              )}>
+                                {entry.classification === "HEALTHY" ? "Healthy choice" : "Harmful if frequent"}
                               </div>
                             )}
                           </div>
                         </div>
+
+                        {entry.aiFeedback && (
+                          <div className="mt-4 relative rounded-xl bg-primary/[0.03] p-3 md:p-4 border border-primary/10 overflow-hidden">
+                            <div className="absolute top-0 left-0 w-1 h-full bg-primary/20" />
+                            <div className="flex gap-2 mb-2">
+                              <Sparkles className="h-3.5 w-3.5 text-primary" />
+                              <span className="text-[9px] font-black uppercase tracking-widest text-primary/70">AI Analysis</span>
+                            </div>
+                            <p className="text-xs md:text-sm text-foreground/80 leading-relaxed italic">
+                              "{entry.aiFeedback}"
+                            </p>
+                            {entry.chatStarter && (
+                              <div className="mt-3 flex justify-end">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="h-8 text-[11px] text-primary hover:text-white hover:bg-primary font-bold gap-1 rounded-lg border border-primary/20"
+                                  onClick={() => navigate({ to: "/app", search: { tab: "ai", prompt: entry.chatStarter } as any })}
+                                >
+                                  Ask: {entry.chatStarter}
+                                  <ChevronRight className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </motion.div>
                     ))}
                   </AnimatePresence>
+                  
                   {(!foodEntries || foodEntries.length === 0) && (
-                    <div className="flex flex-col items-center justify-center py-12 text-center bg-muted/20 rounded-2xl border border-dashed">
-                      <Utensils className="h-8 w-8 text-muted-foreground mb-3 opacity-20" />
-                      <p className="text-xs font-medium text-muted-foreground">Start logging your meals</p>
+                    <div className="flex flex-col items-center justify-center py-20 text-center bg-muted/10 rounded-3xl border-2 border-dashed border-muted-foreground/10">
+                      <div className="h-16 w-16 rounded-full bg-muted/20 flex items-center justify-center mb-4">
+                        <Utensils className="h-8 w-8 text-muted-foreground opacity-30" />
+                      </div>
+                      <h3 className="text-lg font-bold text-muted-foreground">Log your first meal</h3>
+                      <p className="text-xs text-muted-foreground/60 max-w-[200px] mt-1">Get AI insights on your nutrition and health goals.</p>
                     </div>
                   )}
 
-                  {/* Mobile-only AI Tips */}
-                  <div className="lg:hidden">
-                    <Card className="p-4 bg-muted/30 border-none shadow-none mt-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className={cn("h-6 w-6 text-muted-foreground", isRefreshingTips && "animate-spin")}
-                          onClick={refreshTips}
-                          disabled={isRefreshingTips}
-                        >
-                          <Sparkles className="h-3 w-3" />
-                        </Button>
-                      </div>
-                      <ul className="space-y-3 text-sm font-medium">
-                        {dailyTips.length > 0 ? (
-                          dailyTips.map((tip) => (
-                            <li key={tip.id} className="flex items-start gap-2.5">
-                              <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                              <span>{tip.content}</span>
-                            </li>
-                          ))
-                        ) : (
-                          <div className="py-4 text-center">
-                            <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
+                  {/* Mobile-only AI Tips - Re-styled for better appeal */}
+                  <div className="lg:hidden mt-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-muted-foreground/70">AI Daily Insights</h3>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
+                        onClick={refreshTips}
+                        disabled={isRefreshingTips}
+                      >
+                        <Sparkles className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="grid gap-3">
+                      {dailyTips.length > 0 ? (
+                        dailyTips.map((tip) => (
+                          <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 shadow-sm">
+                            <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                              <Sparkles className="h-4 w-4 text-primary" />
+                            </div>
+                            <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
                           </div>
-                        )}
-                      </ul>
-                    </Card>
+                        ))
+                      ) : (
+                        <div className="py-10 text-center border rounded-2xl border-dashed">
+                          <p className="text-xs text-muted-foreground italic">AI is crafting your tips...</p>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
-                <Card className="p-4 md:p-6 h-fit bg-muted/30 border-none shadow-none hidden lg:block">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">AI Daily Tips</h3>
+                {/* Desktop AI Tips - Styled consistently */}
+                <div className="hidden lg:block space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">Daily Insights</h3>
                     <Button 
                       variant="ghost" 
                       size="icon" 
-                      className={cn("h-6 w-6 text-muted-foreground", isRefreshingTips && "animate-spin")}
+                      className={cn("h-8 w-8 text-primary bg-primary/5 rounded-full", isRefreshingTips && "animate-spin")}
                       onClick={refreshTips}
                       disabled={isRefreshingTips}
                     >
-                      <Sparkles className="h-3 w-3" />
+                      <Sparkles className="h-4 w-4" />
                     </Button>
                   </div>
-                  <ul className="space-y-3 text-sm font-medium">
+                  <div className="grid gap-3">
                     {dailyTips.length > 0 ? (
                       dailyTips.map((tip) => (
-                        <li key={tip.id} className="flex items-start gap-2.5">
-                          <div className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                          <span>{tip.content}</span>
-                        </li>
+                        <div key={tip.id} className="flex gap-4 p-4 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent border border-primary/10 hover:border-primary/30 transition-colors shadow-sm">
+                          <div className="h-8 w-8 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                          </div>
+                          <p className="text-xs font-medium leading-relaxed">{tip.content}</p>
+                        </div>
                       ))
                     ) : (
-                      <div className="py-4 text-center">
+                      <div className="py-10 text-center border rounded-2xl border-dashed">
                         <p className="text-[10px] text-muted-foreground italic">AI is preparing your tips...</p>
                       </div>
                     )}
-                  </ul>
-                </Card>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -904,6 +963,23 @@ function ClientDashboard() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!foodToDelete} onOpenChange={(o) => !o && setFoodToDelete(null)}>
+        <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Food Log?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this food entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteFood} className="bg-destructive text-white hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

@@ -303,6 +303,7 @@ function CoachDashboard() {
   const [previewGoal, setPreviewGoal] = useState<Goal | null>(null);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [goalToDelete, setGoalToDelete] = useState<string | null>(null);
+  const [foodToDelete, setFoodToDelete] = useState<number | null>(null);
 
   const fetchClients = () => {
     api
@@ -448,6 +449,20 @@ function CoachDashboard() {
       console.error("Failed to delete goal");
     } finally {
       setGoalToDelete(null);
+    }
+  };
+
+  const confirmDeleteFood = async () => {
+    if (!foodToDelete) return;
+    try {
+      await api.delete(`/food/${foodToDelete}`);
+      setSelectedFoodEntries((prev) => prev.filter((f) => f.id !== foodToDelete));
+      toast.success("Food log deleted");
+      fetchClients();
+    } catch {
+      toast.error("Failed to delete food log");
+    } finally {
+      setFoodToDelete(null);
     }
   };
 
@@ -795,12 +810,25 @@ function CoachDashboard() {
                                     </span>
                                   </div>
                                 </div>
-                                <Badge variant="outline" className="text-[9px] shrink-0 font-bold">
-                                  {new Date(entry.entryTime).toLocaleDateString([], {
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </Badge>
+                                <div className="flex flex-col items-end gap-2 shrink-0">
+                                  <Badge variant="outline" className="text-[9px] font-bold">
+                                    {new Date(entry.entryTime).toLocaleDateString([], {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </Badge>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-6 w-6 text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFoodToDelete(entry.id);
+                                    }}
+                                  >
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
 
                               {entry.aiFeedback && (
@@ -977,6 +1005,29 @@ function CoachDashboard() {
               className="bg-destructive text-white hover:bg-destructive/90"
             >
               Delete Goal
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!foodToDelete}
+        onOpenChange={(o) => !o && setFoodToDelete(null)}
+      >
+        <AlertDialogContent className="dark:bg-[#0a0a0b] border-border/50">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Food Log?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this client's food entry? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteFood}
+              className="bg-destructive text-white hover:bg-destructive/90"
+            >
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
