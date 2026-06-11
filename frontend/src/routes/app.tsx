@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState, useRef } from "react";
+//commnts;
 import { motion, AnimatePresence } from "framer-motion";
 import confetti from "canvas-confetti";
 import {
