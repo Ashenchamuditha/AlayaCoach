@@ -113,6 +113,7 @@ interface FoodEntry {
   aiFeedback?: string;
   coachFeedback?: string;
   imageUrl?: string;
+  deletedByClient?: boolean;
 }
 
 interface WeeklyReport {
@@ -340,15 +341,17 @@ function CoachDashboard() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!useAuth.getState().user) navigate({ to: "/login" });
+      if (!useAuth.getState().user) navigate({ to: "/" });
     }, 50);
     return () => clearTimeout(t);
   }, [navigate]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchClients();
-  }, []);
+    if (user) {
+      setLoading(true);
+      fetchClients();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!token) return;
@@ -481,9 +484,12 @@ function CoachDashboard() {
       const isCompleted = currentStatus === "COMPLETED";
       const { data } = await api.patch(`/goals/${goalId}/toggle?completed=${!isCompleted}`);
       setSelectedGoals((prev) => prev.map((g) => (g.id === goalId ? data : g)));
+      toast.success(data.status === "COMPLETED" ? "Goal marked as completed" : "Goal re-activated");
+      
+      // Auto refresh clients to update progress percentages
       fetchClients();
     } catch {
-      console.error("Failed to toggle goal");
+      toast.error("Failed to toggle goal status");
     }
   };
 
@@ -492,10 +498,10 @@ function CoachDashboard() {
     try {
       await api.delete(`/goals/${goalToDelete}`);
       setSelectedGoals((prev) => prev.filter((g) => g.id !== goalToDelete));
-      toast.success("Goal deleted");
+      toast.success("Goal deleted successfully");
       fetchClients();
     } catch {
-      console.error("Failed to delete goal");
+      toast.error("Failed to delete goal");
     } finally {
       setGoalToDelete(null);
     }
@@ -803,6 +809,13 @@ function CoachDashboard() {
                                   User Deleted
                                 </Badge>
                               )}
+                              {g.status === "COMPLETED" && (
+                                <Badge
+                                  className="bg-green-500 text-white text-[7px] h-3.5 px-1 py-0 border-none"
+                                >
+                                  COMPLETED
+                                </Badge>
+                              )}
                             </div>
                             <Badge
                               variant={g.priority === "HIGH" ? "destructive" : "secondary"}
@@ -887,9 +900,10 @@ function CoachDashboard() {
                                     try {
                                       await api.patch(`/goals/${g.id}/viewed`);
                                       setSelectedGoals(prev => prev.map(item => item.id === g.id ? { ...item, coachViewed: true } : item));
+                                      toast.success("Marked as viewed");
                                       fetchClients();
                                     } catch (e) {
-                                      console.error("Failed to mark as viewed", e);
+                                      toast.error("Failed to mark as viewed");
                                     }
                                   }
                                 }}
@@ -918,7 +932,7 @@ function CoachDashboard() {
                                     try {
                                       await api.patch(`/goals/${g.id}/restore`);
                                       setSelectedGoals(prev => prev.map(item => item.id === g.id ? { ...item, deletedByClient: false } : item));
-                                      toast.success("Goal restored at user side");
+                                      toast.success("Goal restored successfully");
                                       fetchClients();
                                     } catch (e) {
                                       toast.error("Failed to restore goal");
@@ -985,31 +999,68 @@ function CoachDashboard() {
                                     </span>
                                     <span className="flex items-center gap-1 bg-muted/50 px-1.5 rounded">
                                       <Clock className="h-2.5 w-2.5" />{" "}
-                                      {new Date(entry.entryTime).toLocaleTimeString([], {
-                                        hour: "2-digit",
-                                        minute: "2-digit",
-                                      })}
+                                      {(() => {
+                                        const d = new Date(entry.entryTime);
+                                        const now = new Date();
+                                        const isToday = d.toDateString() === now.toDateString();
+                                        const isYesterday = new Date(now.setDate(now.getDate() - 1)).toDateString() === d.toDateString();
+                                        const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                        if (isToday) return timeStr;
+                                        if (isYesterday) return `Yesterday, ${timeStr}`;
+                                        return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+                                      })()}
                                     </span>
                                   </div>
                                 </div>
                                 <div className="flex flex-col items-end gap-2 shrink-0">
-                                  <Badge variant="outline" className="text-[9px] font-bold shrink-0">
-                                    {new Date(entry.entryTime).toLocaleDateString([], {
-                                      month: "short",
-                                      day: "numeric",
-                                    })}
-                                  </Badge>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="h-8 w-8 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setFoodToDelete(entry.id);
-                                    }}
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  <div className="flex items-center gap-1.5">
+                                    {entry.deletedByClient && (
+                                      <Badge variant="destructive" className="text-[9px] font-bold shrink-0 animate-pulse">
+                                        Deleted by Client
+                                      </Badge>
+                                    )}
+                                    <Badge variant="outline" className="text-[9px] font-bold shrink-0">
+                                      {new Date(entry.entryTime).toLocaleDateString([], {
+                                        month: "short",
+                                        day: "numeric",
+                                      })}
+                                    </Badge>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    {entry.deletedByClient && (
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-8 w-8 text-green-600 hover:text-green-700 hover:bg-green-50 shrink-0"
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          try {
+                                            const { data } = await api.post(`/food/${entry.id}/restore`);
+                                            setSelectedFoodEntries((prev) =>
+                                              prev.map((f) => (f.id === entry.id ? data : f))
+                                            );
+                                            toast.success("Food log restored successfully");
+                                          } catch {
+                                            toast.error("Failed to restore food log");
+                                          }
+                                        }}
+                                        title="Restore to User"
+                                      >
+                                        <RotateCcw className="h-4 w-4" />
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-8 w-8 text-destructive lg:opacity-0 lg:group-hover:opacity-100 transition-opacity shrink-0"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setFoodToDelete(entry.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
 

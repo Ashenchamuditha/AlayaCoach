@@ -63,7 +63,14 @@ public class FoodEntryController {
     @GetMapping("/client/{clientId}")
     @PreAuthorize("hasRole('COACH')")
     public ResponseEntity<List<FoodEntry>> clientFoodEntries(@PathVariable("clientId") Long clientId) {
-        return ResponseEntity.ok(foodEntryService.getClientFoodEntries(clientId));
+        return ResponseEntity.ok(foodEntryService.getAllFoodEntriesForCoach(clientId));
+    }
+
+    @PostMapping("/{entryId}/restore")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<FoodEntry> restoreFoodEntry(@PathVariable("entryId") Long entryId,
+                                                      @AuthenticationPrincipal User coach) {
+        return ResponseEntity.ok(foodEntryService.restoreFoodEntry(entryId, coach.getId()));
     }
 
     @PostMapping("/{entryId}/feedback")

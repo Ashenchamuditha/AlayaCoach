@@ -1,6 +1,12 @@
 package com.alaya.service;
 
+import com.alaya.model.AIChat;
+import com.alaya.model.Goal;
+import com.alaya.model.User;
 import com.alaya.repository.CheckinRepository;
+import com.alaya.repository.FoodEntryRepository;
+import com.alaya.repository.GoalRepository;
+import com.alaya.repository.UserRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,6 +14,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +29,9 @@ public class AIService {
 
     private final WebClient.Builder webClientBuilder;
     private final CheckinRepository checkinRepository;
+    private final UserRepository userRepository;
+    private final FoodEntryRepository foodEntryRepository;
+    private final GoalRepository goalRepository;
 
     @Value("${groq.api.url}")
     private String groqApiUrl;
@@ -173,33 +183,80 @@ public class AIService {
         return "{\"foodName\": \"Unknown Food\", \"calories\": 0, \"classification\": \"HEALTHY\", \"feedback\": \"We couldn't identify the food. Try logging manually.\", \"chatStarter\": \"Can you help me identify this food?\"}";
     }
 
-    public String getAIResponse(String userMessage, String userFullName, Long userId) {
+    public String getAIResponse(String userMessage, String userFullName, Long userId, List<com.alaya.model.AIChat> history) {
         StringBuilder context = new StringBuilder();
         if (userId != null) {
+            // 1. Fetch User Biometrics
+            userRepository.findById(userId).ifPresent(u -> {
+                context.append("\nUser Profile:\n");
+                if (u.getGender() != null) context.append("- Gender: ").append(u.getGender()).append("\n");
+                if (u.getBirthDate() != null) context.append("- Birth Date: ").append(u.getBirthDate()).append("\n");
+                if (u.getCurrentWeight() != null) context.append("- Weight: ").append(u.getCurrentWeight()).append("kg\n");
+                if (u.getTargetWeight() != null) context.append("- Target Weight: ").append(u.getTargetWeight()).append("kg\n");
+                if (u.getHeightCm() != null) context.append("- Height: ").append(u.getHeightCm()).append("cm\n");
+                if (u.getActivityLevel() != null) context.append("- Activity Level: ").append(u.getActivityLevel()).append("\n");
+                if (u.getPrimaryGoal() != null) context.append("- Primary Goal: ").append(u.getPrimaryGoal()).append("\n");
+            });
+
+            // 2. Fetch Recent Check-ins
             var checkins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(userId);
             if (!checkins.isEmpty()) {
-                context.append("\nRecent User Actions:\n");
+                context.append("\nRecent Check-ins:\n");
                 for (var c : checkins) {
                     context.append("- ").append(c.getNote()).append("\n");
                 }
+            }
+
+            // 3. Fetch Active Goals
+            var goals = goalRepository.findAllByClientIdAndDeletedByClientFalseOrderByCreatedAtDesc(userId);
+            if (!goals.isEmpty()) {
+                context.append("\nActive Goals:\n");
+                goals.stream().filter(g -> g.getStatus() == com.alaya.model.Goal.GoalStatus.ACTIVE)
+                     .limit(5)
+                     .forEach(g -> context.append("- ").append(g.getTitle()).append(" (").append(g.getCategory()).append(")\n"));
+            }
+
+            // 4. Fetch Recent Food Logs
+            var foodLogs = foodEntryRepository.findAllByClientIdOrderByEntryTimeDesc(userId);
+            if (!foodLogs.isEmpty()) {
+                context.append("\nRecent Food Logs:\n");
+                foodLogs.stream().limit(5).forEach(f -> 
+                    context.append("- ").append(f.getFoodName()).append(" (").append(f.getCalories()).append(" kcal) at ")
+                           .append(f.getEntryTime().toLocalTime()).append("\n")
+                );
             }
         }
 
         String systemPrompt = String.format(
             "You are the Alaya Master Coach AI Assistant. You are talking to %s. " +
             "Scope: Fitness, diet plans, workout plans, user goal tracking, and motivational coaching. " +
-            "Goals: Be a knowledgeable mentor. Don't just give short answers; explain the 'why' behind your advice. " +
+            "Context: You have access to the user's profile, goals, and recent activity. Use this data to provide hyper-personalized advice. " +
+            "If the user asks for advice, calculate suggestions based on their weight, height, and goals. " +
+            "Adaptive Response Length: Match the depth and length of your response to the user's inquiry. " +
             "Rules: " +
-            "1. ONLY answer questions within the scope. Politely decline anything else. " +
-            "2. Use simple, clear, and encouraging English. " +
-            "3. Use multiple paragraphs to break down complex topics. " +
-            "4. Provide educational value so the user learns how to maintain a healthy lifestyle. " +
-            "5. Be detailed and thorough in your explanations. " +
+            "1. ONLY answer questions within the scope. " +
+            "2. Use the provided user context to be specific. Don't give generic advice if you can use their data. " +
+            "3. Provide educational value and explain the 'why'. " +
+            "4. Mirror the user's tone. " +
             "%s",
             userFullName != null ? userFullName : "a user",
             context.toString()
         );
-        String res = callGroqAI(systemPrompt, userMessage);
+
+        List<Map<String, String>> messages = new java.util.ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt));
+
+        if (history != null) {
+            int start = Math.max(0, history.size() - 10);
+            for (int i = start; i < history.size(); i++) {
+                var h = history.get(i);
+                messages.add(Map.of("role", h.getRole(), "content", h.getContent()));
+            }
+        }
+
+        messages.add(Map.of("role", "user", "content", userMessage));
+
+        String res = callGroqAI(messages);
         return res != null ? res : "I'm here to help! Keep pushing forward toward your goals.";
     }
 
@@ -215,15 +272,12 @@ public class AIService {
         return res != null ? res : "{\"clientSummary\": \"Great work this week! Keep tracking your progress to get more insights.\", \"coachBrief\": \"Client is making steady progress.\"}";
     }
 
-    private String callGroqAI(String systemPrompt, String userMessage) {
+    private String callGroqAI(List<Map<String, String>> messages) {
         WebClient client = webClientBuilder.build();
 
         Map<String, Object> body = Map.of(
             "model", groqModel,
-            "messages", List.of(
-                Map.of("role", "system", "content", systemPrompt),
-                Map.of("role", "user", "content", userMessage)
-            ),
+            "messages", messages,
             "max_tokens", 512,
             "temperature", 0.7
         );
@@ -264,5 +318,12 @@ public class AIService {
             log.error("Groq AI call failed: {}", e.getMessage());
         }
         return null;
+    }
+
+    private String callGroqAI(String systemPrompt, String userMessage) {
+        return callGroqAI(List.of(
+            Map.of("role", "system", "content", systemPrompt),
+            Map.of("role", "user", "content", userMessage)
+        ));
     }
 }

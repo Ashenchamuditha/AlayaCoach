@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuth } from "@/store/auth";
 
 export const API_BASE =
   import.meta.env.VITE_API_URL ||
@@ -46,8 +47,7 @@ api.interceptors.response.use(
   (r) => r,
   (err) => {
     if (err?.response?.status === 401 && typeof window !== "undefined") {
-      localStorage.removeItem("alaya_token");
-      localStorage.removeItem("alaya_user");
+      useAuth.getState().logout();
     }
     return Promise.reject(err);
   },

@@ -44,4 +44,7 @@ public class FoodEntry {
     private String coachFeedback;
 
     private String imageUrl;
+
+    @Builder.Default
+    private boolean deletedByClient = false;
 }

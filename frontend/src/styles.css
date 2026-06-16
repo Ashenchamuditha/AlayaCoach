@@ -82,6 +82,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.13 0.025 280);
   --foreground: oklch(0.97 0.01 280);
   --card: oklch(0.18 0.03 280);

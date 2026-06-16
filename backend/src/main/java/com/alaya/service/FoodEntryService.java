@@ -117,6 +117,10 @@ public class FoodEntryService {
     }
 
     public List<FoodEntry> getClientFoodEntries(Long clientId) {
+        return foodEntryRepository.findAllByClientIdAndDeletedByClientFalseOrderByEntryTimeDesc(clientId);
+    }
+
+    public List<FoodEntry> getAllFoodEntriesForCoach(Long clientId) {
         return foodEntryRepository.findAllByClientIdOrderByEntryTimeDesc(clientId);
     }
 
@@ -129,9 +133,36 @@ public class FoodEntryService {
             if (!entry.getClientId().equals(userId)) {
                 throw new AccessDeniedException("Not authorized to delete this food entry");
             }
+            // Soft delete for client
+            entry.setDeletedByClient(true);
+            entry.setUpdatedAt(LocalDateTime.now());
+            foodEntryRepository.save(entry);
+        } else {
+            // Hard delete for coach if they want to truly remove it, or just handle as per coach role
+            foodEntryRepository.delete(entry);
         }
+    }
+
+    @Transactional
+    public FoodEntry restoreFoodEntry(Long entryId, Long coachId) {
+        FoodEntry entry = foodEntryRepository.findById(entryId)
+                .orElseThrow(() -> new RuntimeException("Food entry not found"));
         
-        foodEntryRepository.delete(entry);
+        // Only a coach should be able to restore
+        entry.setDeletedByClient(false);
+        entry.setUpdatedAt(LocalDateTime.now());
+        FoodEntry saved = foodEntryRepository.save(entry);
+
+        // Notify client
+        userRepository.findById(saved.getClientId()).ifPresent(client -> {
+            messagingTemplate.convertAndSendToUser(
+                    client.getEmail(),
+                    "/queue/updates",
+                    Map.of("type", "FOOD_RESTORED", "foodEntryId", entryId)
+            );
+        });
+
+        return saved;
     }
 
     @Transactional

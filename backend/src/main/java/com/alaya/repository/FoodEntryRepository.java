@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface FoodEntryRepository extends JpaRepository<FoodEntry, Long> {
     List<FoodEntry> findAllByClientIdOrderByEntryTimeDesc(Long clientId);
+    List<FoodEntry> findAllByClientIdAndDeletedByClientFalseOrderByEntryTimeDesc(Long clientId);
 }

@@ -120,6 +120,7 @@ interface FoodEntry {
   chatStarter?: string;
   coachFeedback?: string;
   imageUrl?: string;
+  deletedByClient?: boolean;
 }
 
 interface WeeklyReport {
@@ -605,17 +606,19 @@ function ClientDashboard() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!useAuth.getState().user) navigate({ to: "/login", replace: true });
+      if (!useAuth.getState().user) navigate({ to: "/", replace: true });
     }, 50);
     return () => clearTimeout(t);
   }, [navigate]);
 
   useEffect(() => {
-    fetchDashboard();
-    fetchFoodEntries();
-    fetchDailyTips();
-    fetchWeeklyReport();
-  }, []);
+    if (user) {
+      fetchDashboard();
+      fetchFoodEntries();
+      fetchDailyTips();
+      fetchWeeklyReport();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!token) return;
@@ -629,12 +632,17 @@ function ClientDashboard() {
           update.type === "GOAL_UPDATE" ||
           update.type === "GOAL_DELETED" ||
           update.type === "FOOD_FEEDBACK" ||
+          update.type === "FOOD_RESTORED" ||
           update.type === "NEW_NOTIFICATION"
         ) {
           fetchDashboard();
           if (update.type === "FOOD_FEEDBACK") {
             fetchFoodEntries();
             toast.success("Coach sent feedback on your food log!");
+          }
+          if (update.type === "FOOD_RESTORED") {
+            fetchFoodEntries();
+            toast.success("Coach restored a deleted food log.");
           }
         }
       },
@@ -716,6 +724,16 @@ function ClientDashboard() {
         };
       });
       
+      if (updatedGoal.status === "COMPLETED") {
+        toast.success(`Goal "${updatedGoal.title}" completed! ✨`);
+        // Refresh page after a delay as requested to keep overview page updated
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+      } else {
+        toast.success("Goal re-activated");
+      }
+
       // 5. Trigger a dashboard refresh for other stats
       fetchDashboard();
     } catch (err) {
@@ -773,6 +791,10 @@ function ClientDashboard() {
     fetchDashboard();
     setData((d) => {
       if (!d) return null;
+      // Prevent duplicate keys if the goal was already added via WebSockets
+      if (d.goals.some(existing => String(existing.id) === String(g.id))) {
+        return d;
+      }
       return {
         ...d,
         goals: [
@@ -977,8 +999,8 @@ function ClientDashboard() {
                             animate={{ opacity: 1, x: 0 }}
                             exit={{ opacity: 0, x: 10 }}
                             className={cn(
-                              "flex items-start justify-between gap-3 rounded-xl border border-border p-3 md:p-4 transition hover:bg-muted/50 shadow-sm",
-                              g.createdByCoach && "bg-amber-50/30 border-amber-100"
+                              "group flex items-start justify-between gap-3 rounded-xl border border-border p-3 md:p-4 transition hover:bg-muted/50 shadow-sm relative",
+                              g.createdByCoach && "bg-amber-50/30 border-amber-100 dark:bg-amber-500/5 dark:border-amber-900/30"
                             )}
                           >
                             <div className="flex-1 min-w-0">
@@ -1176,7 +1198,10 @@ function ClientDashboard() {
                         <RefreshCw className="h-4 w-4" />
                       </Button>
                     </div>
-                    <AddFoodDialog onAdd={(entry: any) => setFoodEntries([entry as FoodEntry, ...(foodEntries || [])])} />
+                    <AddFoodDialog onAdd={(entry: any) => setFoodEntries((prev) => {
+                      if (prev.some(e => e.id === entry.id)) return prev;
+                      return [entry as FoodEntry, ...prev];
+                    })} />
                   </div>
 
                   {/* Floating Action Button for Mobile */}
@@ -1247,7 +1272,19 @@ function ClientDashboard() {
                                 </div>
                                 <div className="flex flex-wrap gap-1 md:gap-1.5 text-[9px] md:text-xs font-bold mb-2">
                                   <Badge variant="outline" className="text-[8px] md:text-[10px] font-bold bg-muted/50 border-none px-1.5 py-0.5 h-auto">
-                                    {entry.entryTime ? new Date(entry.entryTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : "Now"}
+                                    {entry.entryTime ? (() => {
+                                      const d = new Date(entry.entryTime);
+                                      const now = new Date();
+                                      const isToday = d.toDateString() === now.toDateString();
+                                      const yesterday = new Date(now);
+                                      yesterday.setDate(yesterday.getDate() - 1);
+                                      const isYesterday = d.toDateString() === yesterday.toDateString();
+                                      
+                                      const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                                      if (isToday) return `Today, ${timeStr}`;
+                                      if (isYesterday) return `Yesterday, ${timeStr}`;
+                                      return `${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}, ${timeStr}`;
+                                    })() : "Now"}
                                   </Badge>
                                   <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
                                     <Flame className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.calories || 0} kcal

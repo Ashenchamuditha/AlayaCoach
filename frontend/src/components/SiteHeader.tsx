@@ -10,6 +10,8 @@ import {
   LogOut,
   Menu,
   ChevronDown,
+  User,
+  UserCircle,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -173,23 +175,43 @@ export function SiteHeader() {
 
           {user ? (
             <div className="flex items-center gap-0.5 md:gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShowLogoutConfirm(true)}
-                className="hidden md:flex border-border/60 hover:bg-accent"
-              >
-                Logout
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setShowLogoutConfirm(true)}
-                className="md:hidden h-8 w-8 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-                title="Logout"
-              >
-                <LogOut className="h-4 w-4 stroke-[2.5px]" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border border-border/50"
+                  >
+                    <div className="h-full w-full bg-gradient-brand flex items-center justify-center text-white">
+                      <UserCircle className="h-5 w-5 md:h-6 md:w-6" />
+                    </div>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="w-56 mt-2 dark:bg-[#0a0a0b] border-border/50"
+                >
+                  <div className="flex flex-col px-2 py-2 border-b border-border/50">
+                    <span className="text-sm font-bold truncate">{user.name}</span>
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
+                      {user.role}
+                    </span>
+                  </div>
+                  <DropdownMenuItem asChild className="cursor-pointer h-10">
+                    <Link to="/profile" className="flex items-center gap-2 w-full">
+                      <User className="h-4 w-4 text-primary" />
+                      <span>Profile Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setShowLogoutConfirm(true)}
+                    className="cursor-pointer h-10 text-red-500 focus:text-red-500"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Log Out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           ) : path !== "/login" && path !== "/register" ? (
             <div className="flex items-center gap-2">

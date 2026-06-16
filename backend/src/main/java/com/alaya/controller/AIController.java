@@ -26,10 +26,13 @@ public class AIController {
     @PostMapping("/ai")
     public ResponseEntity<Map<String, String>> askAI(@RequestBody AIMessageRequest req,
                                                    @AuthenticationPrincipal User user) {
+        // Fetch existing history before saving the new message
+        var history = aiChatService.getUserHistory(user.getId());
+        
         // Save user message
         aiChatService.saveMessage(user.getId(), "user", req.getMessage());
         
-        String reply = aiService.getAIResponse(req.getMessage(), user.getFullName(), user.getId());
+        String reply = aiService.getAIResponse(req.getMessage(), user.getFullName(), user.getId(), history);
         
         // Save assistant reply
         aiChatService.saveMessage(user.getId(), "assistant", reply);

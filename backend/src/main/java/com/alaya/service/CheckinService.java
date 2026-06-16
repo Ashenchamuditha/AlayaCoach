@@ -5,7 +5,11 @@ import com.alaya.repository.CheckinRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,29 +22,41 @@ public class CheckinService {
 
     /**
      * Saves a check-in and immediately calls Groq AI to generate feedback.
-     * AI feedback is stored inline on the Checkin entity.
+     * If a check-in for the same goal already exists for today, it updates it.
      */
     public Checkin logCheckin(Long clientId, Long goalId, String note, boolean completed) {
-        // Update Goal status if needed
-        if (goalId != null && completed) {
-            goalRepository.findById(goalId).ifPresent(goal -> {
-                goal.setStatus(com.alaya.model.Goal.GoalStatus.COMPLETED);
-                goal.setCompletedAt(java.time.LocalDateTime.now());
-                goalRepository.save(goal);
-            });
-        }
-
         // 1. Get AI feedback synchronously
         String feedback = aiService.generateCheckinFeedback(note);
+        if (feedback == null) {
+            feedback = completed ? "Great job on completing your goal!" : "Keep up the good work!";
+        }
 
-        // 2. Save checkin with embedded AI feedback
-        Checkin checkin = Checkin.builder()
-                .clientId(clientId)
-                .goalId(goalId)
-                .note(note)
-                .completed(completed)
-                .aiFeedback(feedback)
-                .build();
+        // 2. Check if a check-in for this goal already exists today to avoid unique constraint violations
+        LocalDate today = LocalDate.now();
+        Optional<Checkin> latest = checkinRepository.findFirstByGoalIdOrderByCheckinTimeDesc(goalId);
+        
+        Checkin checkin;
+        if (latest.isPresent() && today.equals(latest.get().getDate())) {
+            // Update existing check-in for today
+            checkin = latest.get();
+            checkin.setNote(note);
+            checkin.setCompleted(completed);
+            checkin.setStatus(completed ? "COMPLETED" : "ACTIVE");
+            checkin.setAiFeedback(feedback);
+            checkin.setCheckinTime(LocalDateTime.now());
+        } else {
+            // Create new check-in
+            checkin = Checkin.builder()
+                    .clientId(clientId)
+                    .goalId(goalId)
+                    .note(note)
+                    .completed(completed)
+                    .date(today)
+                    .status(completed ? "COMPLETED" : "ACTIVE")
+                    .aiFeedback(feedback)
+                    .build();
+        }
+        
         Checkin saved = checkinRepository.save(checkin);
 
         // Notify client about new AI feedback

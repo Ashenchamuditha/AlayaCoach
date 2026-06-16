@@ -32,6 +32,14 @@ public class Checkin {
     @Builder.Default
     private LocalDateTime checkinTime = LocalDateTime.now();
 
+    @Column(name = "date")
+    @Builder.Default
+    private java.time.LocalDate date = java.time.LocalDate.now();
+
+    @Column(nullable = false)
+    @Builder.Default
+    private String status = "COMPLETED";
+
     // AI-generated feedback stored here after Groq call
     @Column(columnDefinition = "TEXT")
     private String aiFeedback;

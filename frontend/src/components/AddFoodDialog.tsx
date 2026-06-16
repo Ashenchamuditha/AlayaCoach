@@ -103,8 +103,11 @@ export function AddFoodDialog({ onAdd, trigger }: Props) {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Format: YYYY-MM-DDTHH:mm:ss
-    const entryTime = new Date().toISOString().split(".")[0];
+    // Format local time: YYYY-MM-DDTHH:mm:ss
+    const now = new Date();
+    const tzOffset = now.getTimezoneOffset() * 60000;
+    const localISOTime = new Date(now.getTime() - tzOffset).toISOString().split(".")[0];
+    const entryTime = localISOTime;
 
     setSubmitting(true);
     try {
