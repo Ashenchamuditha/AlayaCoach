@@ -47,6 +47,7 @@ public class DashboardService {
             map.put("id", String.valueOf(c.getId()));
             map.put("name", c.getFullName() != null ? c.getFullName() : "Unknown");
             map.put("email", c.getEmail() != null ? c.getEmail() : "");
+            map.put("profilePictureUrl", c.getProfilePictureUrl());
             
             ChatMessage lastMsg = chatMessageRepository.findLastMessage(coachId, c.getId());
             map.put("lastMessage", lastMsg != null ? lastMsg.getContent() : "No messages yet");
@@ -71,6 +72,7 @@ public class DashboardService {
         var recentCheckins = checkinRepository.findTop5ByClientIdOrderByCheckinTimeDesc(clientId);
         
         String coachName = "No coach assigned";
+        String coachProfilePictureUrl = null;
         Object coachIdResponse = null;
         String lastMessageFromCoach = "No messages yet";
         long unreadCount = 0;
@@ -89,6 +91,7 @@ public class DashboardService {
             User coach = userRepository.findById(client.getCoachId()).orElse(null);
             if (coach != null) {
                 coachName = coach.getFullName();
+                coachProfilePictureUrl = coach.getProfilePictureUrl();
                 coachIdResponse = String.valueOf(coach.getId());
                 
                 ChatMessage lastMsg = chatMessageRepository.findLastMessage(clientId, coach.getId());
@@ -143,6 +146,7 @@ public class DashboardService {
         response.put("weekly", weekly);
         response.put("coachId", coachIdResponse);
         response.put("coachName", coachName);
+        response.put("coachProfilePictureUrl", coachProfilePictureUrl);
         response.put("lastMessage", lastMessageFromCoach);
         response.put("unreadCount", unreadCount);
 
@@ -241,6 +245,7 @@ public class DashboardService {
 
             // Real weekly progress based on checkins
             clientMap.put("weekly", calculateWeeklyProgress(c.getId()));
+            clientMap.put("profilePictureUrl", c.getProfilePictureUrl());
             
             return clientMap;
         }).toList();

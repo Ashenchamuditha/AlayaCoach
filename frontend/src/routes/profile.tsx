@@ -14,14 +14,26 @@ import {
   Eye,
   EyeOff,
   Mail,
-  ArrowRight
+  ArrowRight,
+  Upload,
+  Trash2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SiteHeader } from "@/components/SiteHeader";
-import { api } from "@/lib/api";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { api, getMediaUrl } from "@/lib/api";
 import { useAuth, type Role } from "@/store/auth";
 import { toast } from "sonner";
 import axios from "axios";
@@ -35,6 +47,7 @@ function ProfilePage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [uploadingPic, setUploadingPic] = useState(false);
   
   // Basic Info
   const [name, setName] = useState("");
@@ -53,6 +66,19 @@ function ProfilePage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Confirmation Alert Dialog State
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string;
+    description: string;
+    onConfirm: () => void;
+  } | null>(null);
+
+  const triggerConfirmation = (title: string, description: string, onConfirm: () => void) => {
+    setConfirmConfig({ title, description, onConfirm });
+    setConfirmOpen(true);
+  };
 
   useEffect(() => {
     if (!user) {
@@ -73,11 +99,66 @@ function ProfilePage() {
       setHeightCm(data.heightCm?.toString() || "");
       setActivityLevel(data.activityLevel || "SEDENTARY");
       setPrimaryGoal(data.primaryGoal || "Weight Loss");
+
+      if (user && data.profilePictureUrl !== user.profilePictureUrl) {
+        setAuth({ ...user, profilePictureUrl: data.profilePictureUrl }, localStorage.getItem("alaya_token") || "");
+      }
     } catch (err) {
       toast.error("Failed to load profile details");
     } finally {
       setFetching(false);
     }
+  };
+
+  const handleProfilePictureUpload = async (file: File) => {
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File is too large. Max size is 5MB.");
+      return;
+    }
+
+    triggerConfirmation(
+      "Update Profile Picture",
+      `Are you sure you want to change your profile picture to ${file.name}?`,
+      async () => {
+        setUploadingPic(true);
+        const formData = new FormData();
+        formData.append("file", file);
+        try {
+          const { data } = await api.post("/users/profile/picture", formData, {
+            headers: { "Content-Type": "multipart/form-data" }
+          });
+          if (user) {
+            setAuth({ ...user, profilePictureUrl: data.profilePictureUrl }, localStorage.getItem("alaya_token") || "");
+          }
+          toast.success("Profile picture updated successfully");
+        } catch (err) {
+          toast.error("Failed to upload profile picture");
+        } finally {
+          setUploadingPic(false);
+        }
+      }
+    );
+  };
+
+  const handleProfilePictureDelete = async () => {
+    triggerConfirmation(
+      "Delete Profile Picture",
+      "Are you sure you want to remove your profile picture? This action cannot be undone.",
+      async () => {
+        setUploadingPic(true);
+        try {
+          const { data } = await api.delete("/users/profile/picture");
+          if (user) {
+            setAuth({ ...user, profilePictureUrl: null }, localStorage.getItem("alaya_token") || "");
+          }
+          toast.success("Profile picture deleted successfully");
+        } catch (err) {
+          toast.error("Failed to delete profile picture");
+        } finally {
+          setUploadingPic(false);
+        }
+      }
+    );
   };
 
   const handleUpdate = async (e: React.FormEvent) => {
@@ -88,41 +169,47 @@ function ProfilePage() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const payload = {
-        fullName: name,
-        gender: user?.role === "CLIENT" ? gender : undefined,
-        birthDate: user?.role === "CLIENT" ? birthDate : undefined,
-        currentWeight: user?.role === "CLIENT" ? parseFloat(currentWeight) : undefined,
-        targetWeight: user?.role === "CLIENT" ? parseFloat(targetWeight) : undefined,
-        heightCm: user?.role === "CLIENT" ? parseFloat(heightCm) : undefined,
-        activityLevel: user?.role === "CLIENT" ? activityLevel : undefined,
-        primaryGoal: user?.role === "CLIENT" ? primaryGoal : undefined,
-        newPassword: newPassword || undefined,
-        confirmPassword: confirmPassword || undefined,
-      };
+    triggerConfirmation(
+      "Save Profile Changes",
+      "Are you sure you want to update your profile details? Any modified information will be updated in the system.",
+      async () => {
+        setLoading(true);
+        try {
+          const payload = {
+            fullName: name,
+            gender: user?.role === "CLIENT" ? gender : undefined,
+            birthDate: user?.role === "CLIENT" ? birthDate : undefined,
+            currentWeight: user?.role === "CLIENT" ? parseFloat(currentWeight) : undefined,
+            targetWeight: user?.role === "CLIENT" ? parseFloat(targetWeight) : undefined,
+            heightCm: user?.role === "CLIENT" ? parseFloat(heightCm) : undefined,
+            activityLevel: user?.role === "CLIENT" ? activityLevel : undefined,
+            primaryGoal: user?.role === "CLIENT" ? primaryGoal : undefined,
+            newPassword: newPassword || undefined,
+            confirmPassword: confirmPassword || undefined,
+          };
 
-      const { data } = await api.put("/users/profile", payload);
-      
-      // Update local auth store if name changed
-      if (user) {
-        setAuth({ ...user, name: data.fullName }, localStorage.getItem("alaya_token") || "");
+          const { data } = await api.put("/users/profile", payload);
+          
+          // Update local auth store if name changed
+          if (user) {
+            setAuth({ ...user, name: data.fullName }, localStorage.getItem("alaya_token") || "");
+          }
+          
+          toast.success("Profile updated successfully");
+          setNewPassword("");
+          setConfirmPassword("");
+          
+          // Auto refresh the page after a short delay to ensure everything is in sync
+          setTimeout(() => {
+            window.location.reload();
+          }, 1000);
+        } catch (err: any) {
+          toast.error(err.response?.data?.message || "Failed to update profile");
+        } finally {
+          setLoading(false);
+        }
       }
-      
-      toast.success("Profile updated successfully");
-      setNewPassword("");
-      setConfirmPassword("");
-      
-      // Auto refresh the page after a short delay to ensure everything is in sync
-      setTimeout(() => {
-        window.location.reload();
-      }, 1000);
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to update profile");
-    } finally {
-      setLoading(false);
-    }
+    );
   };
 
   if (fetching) {
@@ -163,15 +250,68 @@ function ProfilePage() {
             <Card className="overflow-hidden border-border/50 shadow-sm">
               <div className="bg-gradient-brand h-24 relative">
                 <div className="absolute -bottom-10 left-6">
-                  <div className="h-20 w-20 rounded-2xl bg-white dark:bg-[#0a0a0b] p-1 shadow-lg border border-border/50">
-                    <div className="h-full w-full rounded-xl bg-gradient-brand flex items-center justify-center text-white">
-                      <UserCircle className="h-10 w-10" />
+                  <div className="relative group h-20 w-20 rounded-2xl bg-white dark:bg-[#0a0a0b] p-1 shadow-lg border border-border/50">
+                    <div className="h-full w-full rounded-xl overflow-hidden bg-gradient-brand flex items-center justify-center text-white">
+                      {user?.profilePictureUrl ? (
+                        <img
+                          src={getMediaUrl(user.profilePictureUrl)}
+                          alt={name}
+                          className="h-full w-full object-cover animate-in fade-in duration-300"
+                        />
+                      ) : (
+                        <UserCircle className="h-10 w-10" />
+                      )}
                     </div>
+                    {/* Hidden file input */}
+                    <input
+                      type="file"
+                      id="profile-pic-input"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleProfilePictureUpload(file);
+                      }}
+                    />
                   </div>
                 </div>
               </div>
               <div className="pt-14 p-6 space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
+                {/* Photo actions next to or below avatar */}
+                <div className="flex flex-wrap items-center gap-3 pl-0 md:pl-24 pb-2 border-b border-border/50">
+                  <div>
+                    <h3 className="text-sm font-semibold">Profile Picture</h3>
+                    <p className="text-xs text-muted-foreground">PNG, JPG or GIF up to 5MB.</p>
+                  </div>
+                  <div className="flex items-center gap-2 ml-auto">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      disabled={uploadingPic}
+                      onClick={() => document.getElementById("profile-pic-input")?.click()}
+                      className="flex items-center gap-1.5 text-xs h-8"
+                    >
+                      <Upload className="h-3.5 w-3.5" />
+                      {uploadingPic ? "Uploading..." : "Upload Picture"}
+                    </Button>
+                    {user?.profilePictureUrl && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={uploadingPic}
+                        onClick={handleProfilePictureDelete}
+                        className="flex items-center gap-1.5 text-xs text-red-500 hover:text-red-600 hover:bg-red-50/50 dark:hover:bg-red-950/20 h-8"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 md:grid-cols-2 pt-2">
                   <div className="space-y-1.5">
                     <Label htmlFor="email" className="text-xs font-bold uppercase text-muted-foreground">Email Address</Label>
                     <div className="relative">
@@ -415,6 +555,24 @@ function ProfilePage() {
           </div>
         </motion.div>
       </main>
+
+      {/* Confirmation Alert Dialog */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{confirmConfig?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmConfig?.description}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => confirmConfig?.onConfirm()}>
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

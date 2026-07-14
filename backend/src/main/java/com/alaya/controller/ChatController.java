@@ -4,6 +4,7 @@ import com.alaya.dto.ChatMessageDto;
 import com.alaya.dto.SendMessageRequest;
 import com.alaya.model.User;
 import com.alaya.service.ChatService;
+import com.alaya.service.FileStorageService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
@@ -31,8 +33,35 @@ import java.util.List;
 public class ChatController {
 
     private final ChatService chatService;
+    private final FileStorageService fileStorageService;
+
+    @lombok.Data
+    public static class AttachmentUploadResponse {
+        private String attachmentUrl;
+        private String attachmentType;
+        private String attachmentName;
+    }
 
     // ---- REST Endpoints ----
+
+    /**
+     * Upload an attachment for the chat (document, image, video, etc.).
+     */
+    @PostMapping("/upload")
+    public ResponseEntity<AttachmentUploadResponse> uploadAttachment(
+            @RequestParam("file") MultipartFile file) {
+        String fileName = fileStorageService.storeFile(file, "chat");
+        String fileUrl = "/uploads/chat/" + fileName;
+        String contentType = file.getContentType();
+        String originalName = file.getOriginalFilename();
+        
+        AttachmentUploadResponse res = new AttachmentUploadResponse();
+        res.setAttachmentUrl(fileUrl);
+        res.setAttachmentType(contentType);
+        res.setAttachmentName(originalName);
+        
+        return ResponseEntity.ok(res);
+    }
 
     /**
      * Send a message via REST (HTTP fallback or initial send).
@@ -42,7 +71,14 @@ public class ChatController {
     public ResponseEntity<ChatMessageDto> sendMessage(
             @Valid @RequestBody SendMessageRequest req,
             @AuthenticationPrincipal User sender) {
-        ChatMessageDto dto = chatService.sendMessage(sender.getId(), req.getReceiverId(), req.getContent());
+        ChatMessageDto dto = chatService.sendMessage(
+            sender.getId(), 
+            req.getReceiverId(), 
+            req.getContent(),
+            req.getAttachmentUrl(),
+            req.getAttachmentType(),
+            req.getAttachmentName()
+        );
         return ResponseEntity.ok(dto);
     }
 
@@ -73,6 +109,13 @@ public class ChatController {
         // We extract sender from authenticated principal
         String senderEmail = principal.getName();
         // Look up user by email and send
-        chatService.sendMessageByEmail(senderEmail, req.getReceiverId(), req.getContent());
+        chatService.sendMessageByEmail(
+            senderEmail, 
+            req.getReceiverId(), 
+            req.getContent(),
+            req.getAttachmentUrl(),
+            req.getAttachmentType(),
+            req.getAttachmentName()
+        );
     }
 }

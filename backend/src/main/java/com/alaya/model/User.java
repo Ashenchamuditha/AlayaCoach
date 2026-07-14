@@ -55,6 +55,8 @@ public class User implements UserDetails {
 
     private String primaryGoal; // e.g., "Weight Loss", "Muscle Gain", "Maintenance"
 
+    private String profilePictureUrl;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();

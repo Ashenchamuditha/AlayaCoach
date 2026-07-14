@@ -112,6 +112,7 @@ interface FoodEntry {
   id: number;
   foodName: string;
   portion?: string;
+  description?: string;
   calories: number;
   entryTime: string;
   updatedAt?: string;
@@ -343,6 +344,13 @@ function FoodDetailDialog({
                <p className="text-lg font-bold">{entry.portion || "Normal"}</p>
              </div>
           </div>
+
+          {entry.description && (
+            <div className="space-y-1.5 p-4 rounded-2xl bg-muted/30 border border-border/30">
+              <p className="text-[10px] text-muted-foreground uppercase font-black tracking-widest">Description</p>
+              <p className="text-sm leading-normal text-foreground/80">{entry.description}</p>
+            </div>
+          )}
 
           {entry.aiFeedback && (
             <div className="space-y-3">
@@ -1289,8 +1297,8 @@ function ClientDashboard() {
                                   <span className="flex items-center gap-0.5 text-orange-600 bg-orange-50 px-1.5 py-0.5 rounded-full shrink-0">
                                     <Flame className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.calories || 0} kcal
                                   </span>
-                                  <span className="text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full truncate max-w-[80px] xs:max-w-[100px]">
-                                    {entry.portion || "Normal"}
+                                  <span className="flex items-center gap-0.5 text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full shrink-0">
+                                    <Utensils className="h-2 w-2 md:h-2.5 md:w-2.5" /> {entry.portion || "Normal"}
                                   </span>
                                 </div>
                                 {entry.classification && (
@@ -1301,6 +1309,12 @@ function ClientDashboard() {
                                       : "bg-red-100 text-red-700"
                                   )}>
                                     {entry.classification === "HEALTHY" ? "Healthy" : "Limit"}
+                                  </div>
+                                )}
+                                {entry.description && (
+                                  <div className="mt-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 px-2.5 py-1.5 border border-blue-100/50 dark:border-blue-900/30 max-w-xl">
+                                    <span className="font-bold text-[8px] md:text-[9px] uppercase tracking-widest text-blue-500/80 block mb-0.5">📝 Client Note</span>
+                                    <p className="text-[11px] md:text-xs text-foreground/70 break-words whitespace-pre-wrap leading-relaxed">{entry.description}</p>
                                   </div>
                                 )}
                               </div>
@@ -1406,8 +1420,8 @@ function ClientDashboard() {
           )}
 
           {activeTab === "chat" && (
-            <div className="mx-auto max-w-4xl w-full -mx-4 md:mx-0 h-[calc(100dvh-130px)] md:h-[750px] flex flex-col">
-              <ChatInterface peerId={data.coachId} peerName={data.coachName} />
+            <div className="mx-auto max-w-4xl w-full h-[calc(100dvh-140px)] md:h-[calc(100vh-180px)] flex flex-col">
+              <ChatInterface peerId={data.coachId} peerName={data.coachName} peerPictureUrl={data.coachProfilePictureUrl} />
             </div>
           )}
         </div>

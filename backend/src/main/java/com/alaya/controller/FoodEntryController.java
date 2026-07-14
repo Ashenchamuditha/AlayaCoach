@@ -26,6 +26,7 @@ public class FoodEntryController {
     public static class FoodEntryRequest {
         private String foodName;
         private String portion;
+        private String description;
         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
         private LocalDateTime entryTime;
     }
@@ -40,7 +41,7 @@ public class FoodEntryController {
     public ResponseEntity<FoodEntry> logFood(@RequestBody FoodEntryRequest req,
                                              @AuthenticationPrincipal User client) {
         return ResponseEntity.ok(foodEntryService.logFoodEntry(
-                client.getId(), req.getFoodName(), req.getPortion(), req.getEntryTime()));
+                client.getId(), req.getFoodName(), req.getPortion(), req.getDescription(), req.getEntryTime()));
     }
 
     @PostMapping("/upload")
@@ -48,10 +49,11 @@ public class FoodEntryController {
     public ResponseEntity<FoodEntry> logFoodWithImage(@RequestParam("file") MultipartFile file,
                                                       @RequestParam(value = "foodName", required = false) String foodName,
                                                       @RequestParam(value = "portion", required = false) String portion,
+                                                      @RequestParam(value = "description", required = false) String description,
                                                       @RequestParam(value = "entryTime", required = false) 
                                                       @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime entryTime,
                                                       @AuthenticationPrincipal User client) {
-        return ResponseEntity.ok(foodEntryService.logFoodWithImage(client.getId(), file, foodName, portion, entryTime));
+        return ResponseEntity.ok(foodEntryService.logFoodWithImage(client.getId(), file, foodName, portion, description, entryTime));
     }
 
     @GetMapping

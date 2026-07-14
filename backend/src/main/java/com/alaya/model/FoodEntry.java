@@ -24,6 +24,9 @@ public class FoodEntry {
 
     private String portion; // Optional
 
+    private String description; // Optional
+
+
     @Column(nullable = false)
     private Integer calories;
 

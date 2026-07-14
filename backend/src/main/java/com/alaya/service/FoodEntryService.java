@@ -32,7 +32,7 @@ public class FoodEntryService {
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public FoodEntry logFoodEntry(Long clientId, String foodName, String portion, LocalDateTime entryTime) {
+    public FoodEntry logFoodEntry(Long clientId, String foodName, String portion, String description, LocalDateTime entryTime) {
         String aiJson = aiService.generateFoodFeedback(foodName, portion);
         
         Integer estimatedCalories = 0;
@@ -54,6 +54,7 @@ public class FoodEntryService {
                 .clientId(clientId)
                 .foodName(foodName)
                 .portion(portion)
+                .description(description)
                 .calories(estimatedCalories)
                 .entryTime(entryTime != null ? entryTime : LocalDateTime.now())
                 .aiFeedback(advice)
@@ -64,7 +65,7 @@ public class FoodEntryService {
         return foodEntryRepository.save(entry);
     }
 
-    public FoodEntry logFoodWithImage(Long clientId, MultipartFile file, String manualName, String manualPortion, LocalDateTime entryTime) {
+    public FoodEntry logFoodWithImage(Long clientId, MultipartFile file, String manualName, String manualPortion, String description, LocalDateTime entryTime) {
         String fileName = fileStorageService.storeFile(file);
         String imageUrl = "/uploads/food/" + fileName;
 
@@ -105,6 +106,7 @@ public class FoodEntryService {
                 .clientId(clientId)
                 .foodName(foodName)
                 .portion(portion)
+                .description(description)
                 .calories(calories)
                 .entryTime(entryTime != null ? entryTime : LocalDateTime.now())
                 .aiFeedback(advice)

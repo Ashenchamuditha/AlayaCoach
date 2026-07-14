@@ -50,6 +50,10 @@ public class ChatService {
     }
 
     public ChatMessageDto sendMessage(Long senderId, Long receiverId, String content) {
+        return sendMessage(senderId, receiverId, content, null, null, null);
+    }
+
+    public ChatMessageDto sendMessage(Long senderId, Long receiverId, String content, String attachmentUrl, String attachmentType, String attachmentName) {
         User sender   = userRepository.findById(senderId)
                 .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
         User receiver = userRepository.findById(receiverId)
@@ -61,6 +65,9 @@ public class ChatService {
                 .senderId(senderId)
                 .receiverId(receiverId)
                 .content(content)
+                .attachmentUrl(attachmentUrl)
+                .attachmentType(attachmentType)
+                .attachmentName(attachmentName)
                 .build());
 
         ChatMessageDto dto = toDto(msg);
@@ -81,10 +88,14 @@ public class ChatService {
             );
 
             // Create notification for receiver
+            String notificationBody = (content != null && !content.trim().isEmpty())
+                    ? (content.length() > 50 ? content.substring(0, 47) + "..." : content)
+                    : (attachmentName != null ? "Sent an attachment: " + attachmentName : "Sent an attachment");
+
             notificationService.createNotification(
                     receiverId,
                     "New Message from " + sender.getFullName(),
-                    content.length() > 50 ? content.substring(0, 47) + "..." : content,
+                    notificationBody,
                     com.alaya.model.Notification.NotificationType.MESSAGE,
                     String.valueOf(senderId)
             );
@@ -94,9 +105,13 @@ public class ChatService {
     }
 
     public void sendMessageByEmail(String senderEmail, Long receiverId, String content) {
+        sendMessageByEmail(senderEmail, receiverId, content, null, null, null);
+    }
+
+    public void sendMessageByEmail(String senderEmail, Long receiverId, String content, String attachmentUrl, String attachmentType, String attachmentName) {
         User sender = userRepository.findByEmail(senderEmail)
                 .orElseThrow(() -> new IllegalArgumentException("Sender not found"));
-        sendMessage(sender.getId(), receiverId, content);
+        sendMessage(sender.getId(), receiverId, content, attachmentUrl, attachmentType, attachmentName);
     }
 
     public List<ChatMessageDto> getConversationHistory(Long currentUserId, Long otherUserId) {
@@ -120,6 +135,9 @@ public class ChatService {
         dto.setSenderId(m.getSenderId());
         dto.setReceiverId(m.getReceiverId());
         dto.setContent(m.getContent());
+        dto.setAttachmentUrl(m.getAttachmentUrl());
+        dto.setAttachmentType(m.getAttachmentType());
+        dto.setAttachmentName(m.getAttachmentName());
         dto.setTimestamp(m.getTimestamp());
         dto.setRead(m.isRead());
         return dto;

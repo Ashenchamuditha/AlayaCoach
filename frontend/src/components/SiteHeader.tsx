@@ -1,4 +1,5 @@
 import { Link, useRouterState, useNavigate, useSearch } from "@tanstack/react-router";
+import { getMediaUrl } from "@/lib/api";
 import {
   Moon,
   Sun,
@@ -180,11 +181,19 @@ export function SiteHeader() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border border-border/50"
+                    className="h-8 w-8 md:h-10 md:w-10 rounded-full overflow-hidden border border-border/50 p-0"
                   >
-                    <div className="h-full w-full bg-gradient-brand flex items-center justify-center text-white">
-                      <UserCircle className="h-5 w-5 md:h-6 md:w-6" />
-                    </div>
+                    {user.profilePictureUrl ? (
+                      <img
+                        src={getMediaUrl(user.profilePictureUrl)}
+                        alt={user.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-full w-full bg-gradient-brand flex items-center justify-center text-white">
+                        <UserCircle className="h-5 w-5 md:h-6 md:w-6" />
+                      </div>
+                    )}
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent

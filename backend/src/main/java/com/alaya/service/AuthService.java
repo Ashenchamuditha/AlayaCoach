@@ -120,7 +120,7 @@ public class AuthService {
         }
 
         String token = jwtUtils.generateToken(saved);
-        return new AuthResponse(token, new AuthResponse.UserResponse(saved.getId(), saved.getFullName(), saved.getEmail(), saved.getRole().name()));
+        return new AuthResponse(token, new AuthResponse.UserResponse(saved.getId(), saved.getFullName(), saved.getEmail(), saved.getRole().name(), saved.getProfilePictureUrl()));
     }
 
     public AuthResponse login(AuthRequest req) {
@@ -135,7 +135,7 @@ public class AuthService {
                 new UsernamePasswordAuthenticationToken(req.getEmail(), req.getPassword()));
         
         String token = jwtUtils.generateToken(user);
-        return new AuthResponse(token, new AuthResponse.UserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole().name()));
+        return new AuthResponse(token, new AuthResponse.UserResponse(user.getId(), user.getFullName(), user.getEmail(), user.getRole().name(), user.getProfilePictureUrl()));
     }
 
     public void requestForgotPasswordOtp(OtpRequest req) {

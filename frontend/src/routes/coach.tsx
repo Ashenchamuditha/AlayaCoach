@@ -77,6 +77,7 @@ interface Client {
   lastActive: string;
   lastMessage?: string;
   unreadCount?: number;
+  profilePictureUrl?: string | null;
   recentCheckins: {
     id: string;
     note: string;
@@ -108,6 +109,7 @@ interface FoodEntry {
   id: number;
   foodName: string;
   portion?: string;
+  description?: string;
   calories: number;
   entryTime: string;
   aiFeedback?: string;
@@ -600,12 +602,20 @@ function CoachDashboard() {
                         </div>
                       )}
                       <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-gradient-brand text-xs md:text-sm font-semibold text-white shrink-0">
-                          {(c.name || "U")
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </div>
+                        {c.profilePictureUrl ? (
+                          <img
+                            src={getMediaUrl(c.profilePictureUrl)}
+                            alt={c.name}
+                            className="h-10 w-10 md:h-12 md:w-12 rounded-full object-cover shrink-0 border border-border/80 shadow-sm"
+                          />
+                        ) : (
+                          <div className="flex h-10 w-10 md:h-12 md:w-12 items-center justify-center rounded-full bg-gradient-brand text-xs md:text-sm font-semibold text-white shrink-0">
+                            {(c.name || "U")
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <p className="font-semibold text-sm md:text-base truncate">{c.name}</p>
                           <p className="text-[10px] md:text-xs text-muted-foreground truncate">
@@ -666,12 +676,20 @@ function CoachDashboard() {
               <>
                 <div className="flex flex-wrap items-center justify-between gap-4">
                   <div className="flex items-center gap-3 md:gap-4">
-                    <div className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-brand text-white shrink-0 text-lg md:text-xl font-bold shadow-glow">
-                      {(selected.name || "U")
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </div>
+                    {selected.profilePictureUrl ? (
+                      <img
+                        src={getMediaUrl(selected.profilePictureUrl)}
+                        alt={selected.name}
+                        className="h-12 w-12 md:h-14 md:w-14 rounded-full object-cover shrink-0 border border-border/80 shadow-glow"
+                      />
+                    ) : (
+                      <div className="flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-full bg-gradient-brand text-white shrink-0 text-lg md:text-xl font-bold shadow-glow">
+                        {(selected.name || "U")
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")}
+                      </div>
+                    )}
                     <div className="min-w-0">
                       <h1 className="text-xl md:text-2xl font-bold truncate">{selected.name}</h1>
                       <p className="text-xs md:text-sm text-muted-foreground truncate">
@@ -992,7 +1010,7 @@ function CoachDashboard() {
                                   <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 text-[10px] text-muted-foreground font-medium">
                                     <span className="flex items-center gap-1">
                                       <Utensils className="h-2.5 w-2.5" />{" "}
-                                      {entry.portion || "Normal"}
+                                      <span className="font-bold">Portion:</span> {entry.portion || "Normal"}
                                     </span>
                                     <span className="flex items-center gap-1 text-orange-600 font-bold">
                                       <Flame className="h-2.5 w-2.5" /> {entry.calories} kcal
@@ -1063,6 +1081,13 @@ function CoachDashboard() {
                                   </div>
                                 </div>
                               </div>
+
+                              {entry.description && (
+                                <div className="mt-2 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 px-2.5 py-1.5 border border-blue-100/50 dark:border-blue-900/30 max-w-xl">
+                                  <span className="font-bold text-[8px] md:text-[9px] uppercase tracking-widest text-blue-500/80 block mb-0.5">📝 Client Note</span>
+                                  <p className="text-xs text-foreground/70 break-words whitespace-pre-wrap leading-relaxed">{entry.description}</p>
+                                </div>
+                              )}
 
                               {entry.aiFeedback && (
                                 <div className="mb-3 rounded-lg bg-primary/5 p-3 md:p-3.5 border border-primary/10">
@@ -1205,8 +1230,8 @@ function CoachDashboard() {
                 </Card>
               </>
             ) : (
-              <div className="mx-auto max-w-4xl w-full -mx-4 md:mx-auto h-[calc(100dvh-130px)] md:h-[750px] flex flex-col">
-                <ChatInterface peerId={selected.id} peerName={selected.name} />
+              <div className="mx-auto max-w-4xl w-full h-[calc(100dvh-140px)] md:h-[calc(100vh-180px)] flex flex-col">
+                <ChatInterface peerId={selected.id} peerName={selected.name} peerPictureUrl={selected.profilePictureUrl} />
               </div>
             )}
           </motion.div>

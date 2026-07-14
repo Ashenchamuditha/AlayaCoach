@@ -32,6 +32,7 @@ public class UserService {
                 .heightCm(user.getHeightCm())
                 .activityLevel(user.getActivityLevel())
                 .primaryGoal(user.getPrimaryGoal())
+                .profilePictureUrl(user.getProfilePictureUrl())
                 .build();
     }
 
@@ -75,6 +76,15 @@ public class UserService {
             user.setPassword(passwordEncoder.encode(req.getNewPassword()));
         }
 
+        User saved = userRepository.save(user);
+        return getProfile(saved.getEmail());
+    }
+
+    @Transactional
+    public UserProfileDTO updateProfilePicture(String email, String profilePictureUrl) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        user.setProfilePictureUrl(profilePictureUrl);
         User saved = userRepository.save(user);
         return getProfile(saved.getEmail());
     }

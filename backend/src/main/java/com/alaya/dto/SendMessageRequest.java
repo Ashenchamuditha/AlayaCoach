@@ -6,6 +6,9 @@ import lombok.Data;
 
 @Data
 public class SendMessageRequest {
-    @NotNull  public Long receiverId;
-    @NotBlank public String content;
+    @NotNull public Long receiverId;
+    public String content;
+    public String attachmentUrl;
+    public String attachmentType;
+    public String attachmentName;
 }

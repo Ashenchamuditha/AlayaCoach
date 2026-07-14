@@ -7,6 +7,9 @@ export interface ChatMessage {
   senderId: string | number;
   receiverId: string | number;
   content: string;
+  attachmentUrl?: string;
+  attachmentType?: string;
+  attachmentName?: string;
   timestamp: string;
   read?: boolean;
 }

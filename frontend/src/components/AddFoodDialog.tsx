@@ -19,6 +19,7 @@ import { api } from "@/lib/api";
 const schema = z.object({
   foodName: z.string().trim().min(2, "Food name is required"),
   portion: z.string().trim().optional(),
+  description: z.string().trim().optional(),
 });
 
 type FoodInput = z.infer<typeof schema>;
@@ -36,6 +37,7 @@ export function AddFoodDialog({ onAdd, trigger }: Props) {
   const [form, setForm] = useState<FoodInput>({
     foodName: "",
     portion: "",
+    description: "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -94,6 +96,7 @@ export function AddFoodDialog({ onAdd, trigger }: Props) {
     setForm({
       foodName: "",
       portion: "",
+      description: "",
     });
     setFile(null);
     setPreview(null);
@@ -118,6 +121,7 @@ export function AddFoodDialog({ onAdd, trigger }: Props) {
         formData.append("entryTime", entryTime);
         if (form.foodName) formData.append("foodName", form.foodName);
         if (form.portion) formData.append("portion", form.portion);
+        if (form.description) formData.append("description", form.description);
         response = await api.post("/food/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
@@ -250,6 +254,15 @@ export function AddFoodDialog({ onAdd, trigger }: Props) {
               value={form.portion}
               onChange={(e) => setForm({ ...form, portion: e.target.value })}
               placeholder={file ? "AI will estimate portion" : "e.g. 1 bowl, 200g"}
+            />
+          </div>
+          <div className="space-y-1.5 opacity-80 focus-within:opacity-100 transition-opacity">
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Input
+              id="description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              placeholder="e.g. cooked with olive oil, home-cooked"
             />
           </div>
           <DialogFooter>

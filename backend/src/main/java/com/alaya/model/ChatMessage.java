@@ -26,8 +26,12 @@ public class ChatMessage {
     @Column(nullable = false)
     private Long receiverId;
 
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
+
+    private String attachmentUrl;
+    private String attachmentType;
+    private String attachmentName;
 
     @Column(nullable = false)
     @Builder.Default

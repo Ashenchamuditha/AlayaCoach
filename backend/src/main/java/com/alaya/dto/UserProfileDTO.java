@@ -22,4 +22,5 @@ public class UserProfileDTO {
     private Double heightCm;
     private ActivityLevel activityLevel;
     private String primaryGoal;
+    private String profilePictureUrl;
 }
