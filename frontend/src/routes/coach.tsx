@@ -18,6 +18,8 @@ import {
   Sparkles,
   Flame,
   Target,
+  Search,
+  MoreVertical,
 } from "lucide-react";
 import {
   LineChart,
@@ -70,6 +72,14 @@ export const Route = createFileRoute("/coach")({
   component: CoachDashboard,
 });
 
+interface AIChat {
+  id: number;
+  userId: number;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: string;
+}
+
 interface Client {
   id: string;
   name: string;
@@ -79,6 +89,7 @@ interface Client {
   lastMessage?: string;
   unreadCount?: number;
   profilePictureUrl?: string | null;
+  archived?: boolean;
   recentCheckins: {
     id: string;
     note: string;
@@ -306,6 +317,33 @@ function GoalPreviewDialog({
   );
 }
 
+function highlightText(text: string, search: string) {
+  if (!search || !search.trim()) return text;
+  try {
+    const escapedSearch = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+    const regex = new RegExp(`(${escapedSearch})`, 'gi');
+    const parts = text.split(regex);
+    return (
+      <>
+        {parts.map((part, index) =>
+          regex.test(part) ? (
+            <mark
+              key={index}
+              className="bg-amber-200 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 px-0.5 rounded border border-amber-300 dark:border-amber-900/50 font-bold"
+            >
+              {part}
+            </mark>
+          ) : (
+            part
+          )
+        )}
+      </>
+    );
+  } catch (e) {
+    return text;
+  }
+}
+
 function CoachDashboard() {
   const { user, hydrate, token } = useAuth();
   const navigate = useNavigate();
@@ -324,7 +362,13 @@ function CoachDashboard() {
   const [foodToDelete, setFoodToDelete] = useState<number | null>(null);
   const [weeklyReport, setWeeklyReport] = useState<WeeklyReport | null>(null);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [activeTab, setActiveTab] = useState<"goals" | "food">("goals");
+  const [activeTab, setActiveTab] = useState<"goals" | "food" | "ai">("goals");
+  const [selectedAiChats, setSelectedAiChats] = useState<AIChat[]>([]);
+  const [aiSearchQuery, setAiSearchQuery] = useState("");
+  const [aiActiveSearch, setAiActiveSearch] = useState("");
+  const [clientSearchQuery, setClientSearchQuery] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [activeMenuClientId, setActiveMenuClientId] = useState<string | null>(null);
 
   const fetchClients = () => {
     api
@@ -345,7 +389,12 @@ function CoachDashboard() {
 
   useEffect(() => {
     const t = setTimeout(() => {
-      if (!useAuth.getState().user) navigate({ to: "/" });
+      const currentUser = useAuth.getState().user;
+      if (!currentUser) {
+        navigate({ to: "/" });
+      } else if (currentUser.role !== "COACH") {
+        navigate({ to: "/app" });
+      }
     }, 50);
     return () => clearTimeout(t);
   }, [navigate]);
@@ -387,6 +436,10 @@ function CoachDashboard() {
 
   useEffect(() => {
     if (selected) {
+      setAiSearchQuery("");
+      setAiActiveSearch("");
+      setClientSearchQuery("");
+      setActiveMenuClientId(null);
       api.get<Goal[]>(`/goals/client/${selected.id}`).then((r) => {
         if (r.data) setSelectedGoals(r.data);
       });
@@ -398,10 +451,18 @@ function CoachDashboard() {
         .catch((err) => {
           if (err.response?.status === 404) setWeeklyReport(null);
         });
+      api.get<AIChat[]>(`/ai/history/client/${selected.id}`).then((r) => {
+        if (r.data) setSelectedAiChats(r.data);
+      }).catch((err) => {
+        console.error("Failed to load AI chats:", err);
+      });
       setActiveTab("goals");
     } else {
       setSelectedGoals([]);
       setSelectedFoodEntries([]);
+      setSelectedAiChats([]);
+      setAiSearchQuery("");
+      setAiActiveSearch("");
       setWeeklyReport(null);
     }
   }, [selected]);
@@ -574,21 +635,84 @@ function CoachDashboard() {
                 </span>
               </h1>
               <p className="mt-1 text-sm md:text-base text-muted-foreground">
-                {clients.length} active clients today.
+                {clients.filter(c => !c.archived).length} active clients today.
               </p>
             </motion.div>
 
+            {/* Client Search and Filters */}
+            <div className="mt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="relative w-full sm:max-w-md">
+                <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search clients by name..."
+                  value={clientSearchQuery}
+                  onChange={(e) => setClientSearchQuery(e.target.value)}
+                  className="pl-9 bg-background border-border/50 text-sm h-9 shadow-sm"
+                />
+                {clientSearchQuery && (
+                  <button
+                    onClick={() => setClientSearchQuery("")}
+                    className="absolute right-3 top-2 text-xs font-bold text-muted-foreground hover:text-foreground h-9 flex items-center"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="flex bg-muted/40 p-1 rounded-xl border border-border/50 shadow-sm shrink-0 self-start sm:self-auto">
+                <button
+                  onClick={() => {
+                    setShowArchived(false);
+                    setActiveMenuClientId(null);
+                  }}
+                  className={cn(
+                    "px-4 py-1.5 text-xs font-semibold rounded-lg transition-all",
+                    !showArchived
+                      ? "bg-background text-primary shadow-sm border border-border/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Active ({clients.filter(c => !c.archived).length})
+                </button>
+                <button
+                  onClick={() => {
+                    setShowArchived(true);
+                    setActiveMenuClientId(null);
+                  }}
+                  className={cn(
+                    "px-4 py-1.5 text-xs font-semibold rounded-lg transition-all",
+                    showArchived
+                      ? "bg-background text-primary shadow-sm border border-border/20"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Archived ({clients.filter(c => c.archived).length})
+                </button>
+              </div>
+            </div>
+
             <div className="mt-6 grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {clients.length === 0 ? (
-                <Card className="col-span-full p-8 md:p-12 text-center">
-                  <Users className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground opacity-20" />
-                  <h3 className="mt-4 text-lg font-semibold">No clients yet</h3>
-                  <p className="text-sm text-muted-foreground">
-                    New clients who register will be automatically assigned to you.
-                  </p>
-                </Card>
-              ) : (
-                clients.map((c, i) => (
+              {(() => {
+                const filteredClients = clients.filter(c => {
+                  const matchesSearch = c.name.toLowerCase().includes(clientSearchQuery.toLowerCase());
+                  const matchesArchive = showArchived ? c.archived : !c.archived;
+                  return matchesSearch && matchesArchive;
+                });
+
+                if (filteredClients.length === 0) {
+                  return (
+                    <Card className="col-span-full p-8 md:p-12 text-center border-dashed bg-muted/5">
+                      <Users className="mx-auto h-10 w-10 md:h-12 md:w-12 text-muted-foreground opacity-20" />
+                      <h3 className="mt-4 text-base font-semibold">
+                        {showArchived ? "No archived clients found" : "No active clients found"}
+                      </h3>
+                      <p className="text-xs text-muted-foreground/80 mt-1">
+                        {clientSearchQuery ? "Try searching for other terms." : "All your clients will appear here."}
+                      </p>
+                    </Card>
+                  );
+                }
+
+                return filteredClients.map((c, i) => (
                   <motion.div
                     key={c.id}
                     initial={{ opacity: 0, y: 12 }}
@@ -599,11 +723,72 @@ function CoachDashboard() {
                       onClick={() => setSelected(c)}
                       className="group relative cursor-pointer p-5 md:p-6 transition hover:-translate-y-0.5 hover:shadow-glow"
                     >
-                      {!!c.unreadCount && c.unreadCount > 0 && (
-                        <div className="absolute right-3 top-3 md:right-4 md:top-4 flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[8px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
-                          {c.unreadCount > 9 ? "9+" : c.unreadCount}
-                        </div>
+                      <div className="absolute right-3 top-3 md:right-4 md:top-4 flex items-center gap-1.5">
+                        {!!c.unreadCount && c.unreadCount > 0 && (
+                          <div className="flex h-5 w-5 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[8px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
+                            {c.unreadCount > 9 ? "9+" : c.unreadCount}
+                          </div>
+                        )}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setActiveMenuClientId(activeMenuClientId === c.id ? null : c.id);
+                          }}
+                          className="p-1 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                          title="Client Actions"
+                        >
+                          <MoreVertical className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      {activeMenuClientId === c.id && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-30"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuClientId(null);
+                            }}
+                          />
+                          <Card className="absolute right-4 top-12 z-40 w-44 p-1 shadow-lg border border-border bg-popover text-popover-foreground">
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setActiveMenuClientId(null);
+                                try {
+                                  await api.put(`/dashboard/coach/clients/${c.id}/archive?archived=${!c.archived}`);
+                                  toast.success(c.archived ? "Client unarchived successfully" : "Client archived successfully");
+                                  fetchClients();
+                                } catch {
+                                  toast.error("Failed to update client status");
+                                }
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-semibold hover:bg-accent hover:text-accent-foreground rounded-lg transition-colors"
+                            >
+                              {c.archived ? "Unarchive Client" : "Archive Client"}
+                            </button>
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setActiveMenuClientId(null);
+                                if (window.confirm(`Are you sure you want to delete client ${c.name}?`)) {
+                                  try {
+                                    await api.delete(`/dashboard/coach/clients/${c.id}`);
+                                    toast.success("Client deleted successfully");
+                                    fetchClients();
+                                  } catch {
+                                    toast.error("Failed to delete client");
+                                  }
+                                }
+                              }}
+                              className="w-full text-left px-3 py-2 text-xs font-semibold text-destructive hover:bg-destructive/10 rounded-lg transition-colors"
+                            >
+                              Delete Client
+                            </button>
+                          </Card>
+                        </>
                       )}
+
                       <div className="flex items-center gap-3">
                         {c.profilePictureUrl ? (
                           <img
@@ -653,7 +838,7 @@ function CoachDashboard() {
                     </Card>
                   </motion.div>
                 ))
-              )}
+              })()}
             </div>
           </>
         )}
@@ -884,6 +1069,28 @@ function CoachDashboard() {
                           </Badge>
                         </span>
                       </button>
+                      <button
+                        onClick={() => setActiveTab("ai")}
+                        className={cn(
+                          "relative flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-300",
+                          activeTab === "ai" ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                        )}
+                      >
+                        {activeTab === "ai" && (
+                          <motion.div
+                            layoutId="active-tab-indicator"
+                            className="absolute inset-0 bg-background rounded-lg shadow-sm border border-border/20"
+                            transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                          />
+                        )}
+                        <span className="relative z-10 flex items-center gap-2">
+                          <Sparkles className="h-4 w-4 animate-pulse" />
+                          AI Chat History
+                          <Badge className="ml-1 px-1.5 py-0 text-[10px] bg-primary/10 text-primary border-none hover:bg-primary/20 font-bold">
+                            {selectedAiChats.length}
+                          </Badge>
+                        </span>
+                      </button>
                     </div>
 
                     {activeTab === "goals" && (
@@ -900,7 +1107,7 @@ function CoachDashboard() {
                   </div>
 
                   <div>
-                    {activeTab === "goals" ? (
+                    {activeTab === "goals" && (
                       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                         {!selectedGoals || selectedGoals.length === 0 ? (
                           <Card className="col-span-full p-12 text-center text-muted-foreground bg-muted/20 border-dashed">
@@ -1089,7 +1296,8 @@ function CoachDashboard() {
                           ))
                         )}
                       </div>
-                    ) : (
+                    )}
+                    {activeTab === "food" && (
                       <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
                         {!selectedFoodEntries || selectedFoodEntries.length === 0 ? (
                           <Card className="col-span-full p-8 text-center text-muted-foreground bg-muted/20 border-dashed">
@@ -1280,6 +1488,122 @@ function CoachDashboard() {
                           ))
                         )}
                       </div>
+                    )}
+
+                    {activeTab === "ai" && (
+                      <Card className="p-6 border-border/50 bg-background/50 backdrop-blur-sm shadow-inner flex flex-col gap-6 max-w-4xl mx-auto w-full">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/50 pb-4">
+                          <div>
+                            <h3 className="font-bold text-lg flex items-center gap-2">
+                              <Sparkles className="h-5 w-5 text-indigo-500" />
+                              Client's AI Conversations
+                            </h3>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              Review questions your client asked the AI Assistant and the generated suggestions.
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2 w-full sm:max-w-md">
+                            <div className="relative flex-1">
+                              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                              <Input
+                                placeholder="Search conversation..."
+                                value={aiSearchQuery}
+                                onChange={(e) => {
+                                  setAiSearchQuery(e.target.value);
+                                  if (e.target.value === "") {
+                                    setAiActiveSearch("");
+                                  }
+                                }}
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter") {
+                                    setAiActiveSearch(aiSearchQuery);
+                                  }
+                                }}
+                                className="pl-9 bg-background/50 border-border/50 text-sm h-9"
+                              />
+                            </div>
+                            <Button
+                              size="sm"
+                              className="h-9 px-4 font-bold shrink-0"
+                              onClick={() => setAiActiveSearch(aiSearchQuery)}
+                            >
+                              Search
+                            </Button>
+                            {aiActiveSearch && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-9 px-2 font-bold shrink-0 text-muted-foreground hover:text-foreground"
+                                onClick={() => {
+                                  setAiSearchQuery("");
+                                  setAiActiveSearch("");
+                                }}
+                              >
+                                Clear
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="max-h-[550px] overflow-y-auto pr-2 flex flex-col gap-4 scrollbar-thin">
+                          {(() => {
+                            const filteredChats = selectedAiChats.filter(chat =>
+                              chat.content.toLowerCase().includes(aiActiveSearch.toLowerCase())
+                            );
+
+                            if (selectedAiChats.length === 0) {
+                              return (
+                                <div className="text-center py-16 text-muted-foreground bg-muted/5 rounded-xl border border-dashed border-border/50">
+                                  <Sparkles className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                                  <p className="text-sm font-semibold">No AI Chat logs found</p>
+                                  <p className="text-xs text-muted-foreground/75 mt-1">This client has not interacted with the AI assistant yet.</p>
+                                </div>
+                              );
+                            }
+
+                            if (filteredChats.length === 0) {
+                              return (
+                                <div className="text-center py-16 text-muted-foreground bg-muted/5 rounded-xl border border-dashed border-border/50">
+                                  <Search className="h-8 w-8 mx-auto text-muted-foreground/30 mb-3" />
+                                  <p className="text-sm font-semibold">No matches found</p>
+                                  <p className="text-xs text-muted-foreground/75 mt-1">Try searching for other terms.</p>
+                                </div>
+                              );
+                            }
+
+                            return filteredChats.map((chat) => {
+                              const isUser = chat.role === "user";
+                              return (
+                                <div
+                                  key={chat.id}
+                                  className={cn(
+                                    "flex flex-col max-w-[85%] rounded-2xl p-4 shadow-sm transition-all duration-300",
+                                    isUser
+                                      ? "self-end bg-primary text-primary-foreground rounded-tr-none hover:shadow-md"
+                                      : "self-start bg-muted/60 text-foreground border border-border/40 rounded-tl-none hover:bg-muted/85"
+                                  )}
+                                >
+                                  <div className="flex items-center gap-2 mb-1.5">
+                                    <span className="text-[10px] font-bold tracking-wider uppercase opacity-80">
+                                      {isUser ? selected.name : "AI ASSISTANT"}
+                                    </span>
+                                    <span className="text-[9px] opacity-60 flex items-center gap-1 font-medium">
+                                      <Clock className="h-2.5 w-2.5" />
+                                      {new Date(chat.timestamp).toLocaleTimeString([], {
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm leading-relaxed whitespace-pre-wrap font-medium">
+                                    {highlightText(chat.content, aiActiveSearch)}
+                                  </p>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </Card>
                     )}
                   </div>
                 </div>

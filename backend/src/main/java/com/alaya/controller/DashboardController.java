@@ -6,9 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -47,5 +45,21 @@ public class DashboardController {
         }
         System.out.println("DEBUG: Coach Accessing Dashboard: " + coach.getEmail());
         return ResponseEntity.ok(dashboardService.getCoachClients(coach.getId()));
+    }
+
+    @PutMapping("/coach/clients/{clientId}/archive")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> archiveClient(
+            @PathVariable Long clientId,
+            @RequestParam boolean archived) {
+        dashboardService.archiveClient(clientId, archived);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/coach/clients/{clientId}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<Void> deleteClient(@PathVariable Long clientId) {
+        dashboardService.deleteClient(clientId);
+        return ResponseEntity.ok().build();
     }
 }

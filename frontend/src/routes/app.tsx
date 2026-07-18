@@ -27,6 +27,7 @@ import {
   ChevronRight,
   Users,
   RefreshCw,
+  ArrowLeft,
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -145,6 +146,7 @@ interface DashboardData {
   weekly: { day: string; score: number }[];
   coachId: string;
   coachName: string;
+  coachProfilePictureUrl?: string | null;
   lastMessage?: string;
   unreadCount?: number;
 }
@@ -290,7 +292,23 @@ function FoodDetailDialog({
 
   return (
     <Sheet open={!!entry} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="p-0 overflow-y-auto w-full sm:max-w-md border-none bg-card custom-scrollbar">
+      <SheetContent side="right" className="p-0 h-full overflow-y-auto w-full sm:max-w-md border-none bg-card custom-scrollbar">
+        {/* Floating Back/Close Button */}
+        <Button
+          size="icon"
+          variant="ghost"
+          className={cn(
+            "absolute top-4 left-4 z-50 rounded-full h-9 w-9 flex items-center justify-center border transition-all",
+            entry.imageUrl 
+              ? "bg-black/40 hover:bg-black/60 text-white border-white/10 backdrop-blur-md" 
+              : "bg-background/80 hover:bg-muted text-foreground border-border/50 backdrop-blur-md"
+          )}
+          onClick={onClose}
+          title="Go back"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+
         {entry.imageUrl ? (
           <div className="w-full aspect-square relative">
             <img 
@@ -613,10 +631,12 @@ function ClientDashboard() {
   }, [hydrate]);
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      if (!useAuth.getState().user) navigate({ to: "/", replace: true });
-    }, 50);
-    return () => clearTimeout(t);
+    const currentUser = useAuth.getState().user;
+    if (!currentUser) {
+      navigate({ to: "/", replace: true });
+    } else if (currentUser.role !== "CLIENT") {
+      navigate({ to: "/coach", replace: true });
+    }
   }, [navigate]);
 
   useEffect(() => {
@@ -920,19 +940,35 @@ function ClientDashboard() {
                     </div>
                   </div>
                 </Card>
-                <Card className="relative p-3 md:p-6">
+                <Card
+                  className="relative p-3 md:p-6 cursor-pointer hover:border-primary/50 transition-all"
+                  onClick={() => navigate({ to: "/app", search: { tab: "chat" } })}
+                >
                   {!!data.unreadCount && data.unreadCount > 0 && (
                     <div className="absolute -right-1.5 -top-1.5 flex h-4 w-4 md:h-6 md:w-6 items-center justify-center rounded-full bg-destructive text-[7px] md:text-[10px] font-bold text-white shadow-lg animate-pulse">
                       {data.unreadCount > 9 ? "9+" : data.unreadCount}
                     </div>
                   )}
                   <div className="flex items-center gap-2 md:gap-3">
-                    <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
-                      <Sparkles className="h-3.5 w-3.5 md:h-5 md:w-5" />
-                    </div>
+                    {data.coachProfilePictureUrl ? (
+                      <div className="h-8 w-8 md:h-10 md:w-10 rounded-lg overflow-hidden shrink-0 border border-border">
+                        <img
+                          src={getMediaUrl(data.coachProfilePictureUrl)}
+                          alt={data.coachName}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex h-8 w-8 md:h-10 md:w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-brand text-white">
+                        <Users className="h-3.5 w-3.5 md:h-5 md:w-5" />
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="text-[8px] md:text-xs text-muted-foreground uppercase font-bold">Coach</p>
-                      <p className="text-[10px] md:text-sm font-medium line-clamp-1">
+                      <p className="text-xs md:text-sm lg:text-base font-bold leading-tight truncate">
+                        {data.coachName || "No coach assigned"}
+                      </p>
+                      <p className="text-[9px] md:text-xs text-muted-foreground truncate mt-0.5">
                         {data.lastMessage || "No messages yet"}
                       </p>
                     </div>
@@ -940,54 +976,35 @@ function ClientDashboard() {
                 </Card>
               </div>
 
-              <div className="grid gap-6 lg:grid-cols-3">
-                <div className="space-y-6 lg:col-span-2">
-                  <Card id="weekly-report-content" className="p-4 md:p-6 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900/50">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <Sparkles className="h-5 w-5 text-indigo-500" />
-                        <h2 className="text-lg font-semibold">Weekly AI Summary</h2>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {weeklyReport && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={downloadPDF}
-                            className="text-xs bg-white/50 dark:bg-black/50"
-                            title="Download PDF"
-                          >
-                            <Download className="h-3.5 w-3.5 mr-1" />
-                            <span className="hidden sm:inline">Download</span>
-                          </Button>
-                        )}
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={generateReport}
-                          disabled={isGeneratingReport}
-                          className="text-xs bg-white/50 dark:bg-black/50"
-                        >
-                          {isGeneratingReport ? "Analyzing..." : (weeklyReport ? "Refresh" : "Generate Report")}
-                        </Button>
-                      </div>
-                    </div>
-                    {weeklyReport ? (
-                      <div className="space-y-3">
-                        <p className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium">
-                          {weeklyReport.clientSummary}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground text-right">
-                          Report for: {new Date(weeklyReport.startDate).toLocaleDateString()} - {new Date(weeklyReport.endDate).toLocaleDateString()}
-                        </p>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-muted-foreground italic py-2">
-                        Click "Generate Report" to get a personalized AI summary of your progress this week.
-                      </p>
-                    )}
-                  </Card>
+              <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+                {/* 1. Stopwatch: Top on mobile (order-1), right column on desktop (lg:col-start-3 lg:row-start-2) */}
+                <div className="order-1 lg:order-4 lg:col-start-3 lg:row-start-2 lg:row-span-1">
+                  <StopwatchTimer />
+                </div>
 
+                {/* 2. Weekly Chart: Above goals on mobile (order-2), right column on desktop (lg:col-start-3 lg:row-start-1) */}
+                <div className="order-2 lg:order-3 lg:col-start-3 lg:row-start-1 lg:row-span-1">
+                  <Card className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <h2 className="text-lg font-semibold">Weekly</h2>
+                      <Flame className="h-4 w-4 text-orange-500" />
+                    </div>
+                    <div className="mt-4 h-40 md:h-48">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={data.weekly || []}>
+                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
+                          <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9 }} dy={10} />
+                          <YAxis hide domain={[0, 100]} />
+                          <Tooltip contentStyle={{ borderRadius: 12, fontSize: 10 }} />
+                          <Line type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={3} dot={{ r: 3 }} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* 3. Today's Goals: Below weekly chart on mobile (order-3), left column row 2 on desktop (lg:col-span-2 lg:row-start-2) */}
+                <div className="order-3 lg:order-2 lg:col-span-2 lg:col-start-1 lg:row-start-2">
                   <Card className="p-4 md:p-6">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -1100,25 +1117,53 @@ function ClientDashboard() {
                   </Card>
                 </div>
 
-                <div className="space-y-6">
-                  <Card className="p-4 md:p-6">
-                    <div className="flex items-center justify-between">
-                      <h2 className="text-lg font-semibold">Weekly</h2>
-                      <Flame className="h-4 w-4 text-orange-500" />
+                {/* 4. Weekly AI Summary: Bottom on mobile (order-4), left column row 1 on desktop (lg:col-span-2 lg:row-start-1) */}
+                <div className="order-4 lg:order-1 lg:col-span-2 lg:col-start-1 lg:row-start-1">
+                  <Card id="weekly-report-content" className="p-4 md:p-6 bg-gradient-to-br from-indigo-50/50 to-purple-50/50 dark:from-indigo-950/20 dark:to-purple-950/20 border-indigo-100 dark:border-indigo-900/50">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-indigo-500" />
+                        <h2 className="text-lg font-semibold">Weekly AI Summary</h2>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {weeklyReport && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={downloadPDF}
+                            className="text-xs bg-white/50 dark:bg-black/50"
+                            title="Download PDF"
+                          >
+                            <Download className="h-3.5 w-3.5 mr-1" />
+                            <span className="hidden sm:inline">Download</span>
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={generateReport}
+                          disabled={isGeneratingReport}
+                          className="text-xs bg-white/50 dark:bg-black/50"
+                        >
+                          {isGeneratingReport ? "Analyzing..." : (weeklyReport ? "Refresh" : "Generate Report")}
+                        </Button>
+                      </div>
                     </div>
-                    <div className="mt-4 h-40 md:h-48">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={data.weekly || []}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                          <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fontSize: 9 }} dy={10} />
-                          <YAxis hide domain={[0, 100]} />
-                          <Tooltip contentStyle={{ borderRadius: 12, fontSize: 10 }} />
-                          <Line type="monotone" dataKey="score" stroke="var(--primary)" strokeWidth={3} dot={{ r: 3 }} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
+                    {weeklyReport ? (
+                      <div className="space-y-3">
+                        <p className="text-sm md:text-base leading-relaxed text-foreground/90 font-medium">
+                          {weeklyReport.clientSummary}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground text-right">
+                          Report for: {new Date(weeklyReport.startDate).toLocaleDateString()} - {new Date(weeklyReport.endDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground italic py-2">
+                        Click "Generate Report" to get a personalized AI summary of your progress this week.
+                      </p>
+                    )}
                   </Card>
-                  <StopwatchTimer />
                 </div>
               </div>
             </div>

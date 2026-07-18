@@ -202,9 +202,9 @@ public class DashboardService {
             return List.of();
         }
 
-        // Fetch all users with role CLIENT. 
-        // In this setup, we want coaches to see all clients so they can manage them.
-        List<User> clients = userRepository.findAllByRole(com.alaya.model.Role.CLIENT);
+        List<User> clients = userRepository.findAllByRole(com.alaya.model.Role.CLIENT).stream()
+                .filter(c -> !c.isDeleted())
+                .toList();
         
         System.out.println("DEBUG: Found " + clients.size() + " clients for coach " + coachId);
 
@@ -246,8 +246,25 @@ public class DashboardService {
             // Real weekly progress based on checkins
             clientMap.put("weekly", calculateWeeklyProgress(c.getId()));
             clientMap.put("profilePictureUrl", c.getProfilePictureUrl());
+            clientMap.put("archived", c.isArchived());
             
             return clientMap;
         }).toList();
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void archiveClient(Long clientId, boolean archived) {
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        client.setArchived(archived);
+        userRepository.save(client);
+    }
+
+    @org.springframework.transaction.annotation.Transactional
+    public void deleteClient(Long clientId) {
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new IllegalArgumentException("Client not found"));
+        client.setDeleted(true);
+        userRepository.save(client);
     }
 }

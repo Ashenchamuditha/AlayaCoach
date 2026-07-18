@@ -57,6 +57,14 @@ public class User implements UserDetails {
 
     private String profilePictureUrl;
 
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean archived = false;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    @Builder.Default
+    private boolean deleted = false;
+
     @Column(nullable = false, updatable = false)
     @Builder.Default
     private java.time.LocalDateTime createdAt = java.time.LocalDateTime.now();

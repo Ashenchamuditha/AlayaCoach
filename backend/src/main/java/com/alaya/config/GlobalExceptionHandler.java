@@ -35,6 +35,17 @@ public class GlobalExceptionHandler {
         return createErrorResponse("Validation failed: " + errorMsg, HttpStatus.BAD_REQUEST);
     }
 
+    @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
+    public ResponseEntity<Map<String, String>> handleAccessDenied(org.springframework.security.access.AccessDeniedException ex) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        log.warn("Access Denied: {}. Authentication: {}, Authorities: {}", 
+            ex.getMessage(), 
+            auth != null ? auth.getName() : "null", 
+            auth != null ? auth.getAuthorities() : "null"
+        );
+        return createErrorResponse(ex.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGeneralException(Exception ex) {
         log.error("Unexpected Error: ", ex);

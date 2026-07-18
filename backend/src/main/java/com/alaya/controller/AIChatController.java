@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import java.util.List;
 
 @RestController
@@ -20,6 +21,12 @@ public class AIChatController {
     @GetMapping
     public ResponseEntity<List<AIChat>> getHistory(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(aiChatService.getUserHistory(user.getId()));
+    }
+
+    @GetMapping("/client/{clientId}")
+    @PreAuthorize("hasRole('COACH')")
+    public ResponseEntity<List<AIChat>> getClientHistory(@PathVariable Long clientId) {
+        return ResponseEntity.ok(aiChatService.getUserHistory(clientId));
     }
 
     @DeleteMapping

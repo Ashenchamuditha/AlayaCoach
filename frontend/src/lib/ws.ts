@@ -15,7 +15,7 @@ export interface ChatMessage {
 }
 
 export interface GenericUpdate {
-  type: "GOAL_UPDATE" | "GOAL_DELETED" | "DASHBOARD_REFRESH" | "FOOD_FEEDBACK" | "NEW_NOTIFICATION";
+  type: "GOAL_UPDATE" | "GOAL_DELETED" | "DASHBOARD_REFRESH" | "FOOD_FEEDBACK" | "FOOD_RESTORED" | "NEW_NOTIFICATION";
   goalId?: string | number;
   clientId?: string | number;
   status?: string;

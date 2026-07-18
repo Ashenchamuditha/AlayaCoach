@@ -387,9 +387,9 @@ export function ChatInterface({ peerId, peerName, peerPictureUrl }: Props) {
           <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 ring-2 ring-background animate-pulse" />
         </div>
         <div>
-          <p className="text-sm font-bold tracking-tight text-foreground truncate">{peerName}</p>
+          <p className="text-sm md:text-base font-bold tracking-tight text-foreground truncate">{peerName}</p>
           <div className="flex items-center gap-1">
-            <p className="text-[10px] text-primary/95 font-bold uppercase tracking-wider">
+            <p className="text-[10px] md:text-xs text-primary/95 font-bold uppercase tracking-wider">
               Personal Accountability Coach
             </p>
           </div>
@@ -461,7 +461,7 @@ export function ChatInterface({ peerId, peerName, peerPictureUrl }: Props) {
                     {/* Message Bubble */}
                     <div
                       className={cn(
-                        "max-w-[80%] md:max-w-[68%] rounded-2xl px-4 py-2.5 text-xs md:text-sm shadow-sm transition-all hover:shadow-md",
+                        "max-w-[85%] md:max-w-[68%] rounded-2xl px-4 py-2.5 text-sm shadow-sm transition-all hover:shadow-md",
                         mine
                           ? "rounded-br-sm bg-gradient-brand text-white shadow-primary/10"
                           : "rounded-bl-sm bg-card/90 dark:bg-card/70 text-foreground border border-border/50 backdrop-blur-xs"
@@ -514,7 +514,7 @@ export function ChatInterface({ peerId, peerName, peerPictureUrl }: Props) {
 
                       <div
                         className={cn(
-                          "mt-1.5 flex items-center justify-end gap-1 text-[8px] md:text-[9px] font-bold tracking-wide uppercase",
+                          "mt-1.5 flex items-center justify-end gap-1 text-[9px] md:text-[10px] font-bold tracking-wide uppercase",
                           mine ? "text-white/75" : "text-muted-foreground/75"
                         )}
                       >
@@ -696,7 +696,7 @@ export function ChatInterface({ peerId, peerName, peerPictureUrl }: Props) {
             onChange={(e) => setText(e.target.value)}
             placeholder="Type a message..."
             disabled={uploading}
-            className="flex-1 text-xs md:text-sm h-9 md:h-11 px-3 md:px-4 rounded-xl border border-border/80 bg-background/50 focus-visible:ring-primary focus-visible:ring-1 focus-visible:border-primary transition-all duration-200"
+            className="flex-1 text-sm h-10 md:h-11 px-3 md:px-4 rounded-xl border border-border/80 bg-background/50 focus-visible:ring-primary focus-visible:ring-1 focus-visible:border-primary transition-all duration-200"
           />
 
           <Button

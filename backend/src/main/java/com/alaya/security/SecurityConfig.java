@@ -63,15 +63,7 @@ public class SecurityConfig {
         
         System.out.println("ALAYA SYSTEM: Configuring CORS with allowed-origins: " + allowedOrigins);
         
-        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
-            List<String> origins = java.util.Arrays.stream(allowedOrigins.split(","))
-                    .map(String::trim)
-                    .filter(s -> !s.isEmpty())
-                    .toList();
-            config.setAllowedOrigins(origins);
-        } else {
-            config.setAllowedOrigins(List.of("http://localhost:8080", "http://localhost:5173", "http://localhost:3000"));
-        }
+        config.setAllowedOriginPatterns(List.of("*"));
         
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin", "Access-Control-Request-Method", "Access-Control-Request-Headers"));

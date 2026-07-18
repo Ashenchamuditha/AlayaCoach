@@ -4,7 +4,7 @@ import { useAuth } from "@/store/auth";
 export const API_BASE =
   import.meta.env.VITE_API_URL ||
   (import.meta.env.MODE === "development"
-    ? "http://localhost:8081/api"
+    ? `http://${typeof window !== "undefined" ? window.location.hostname : "localhost"}:8081/api`
     : "https://alayacoach-production.up.railway.app/api"); // Hardcoded fallback for production if Vercel fails to pass the variable
 
 if (!import.meta.env.VITE_API_URL && import.meta.env.PROD) {
