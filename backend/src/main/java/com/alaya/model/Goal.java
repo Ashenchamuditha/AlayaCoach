@@ -69,6 +69,12 @@ public class Goal {
     @Builder.Default
     private boolean deletedByClient = false;
 
+    @Builder.Default
+    private boolean nearingReminderSent = false;
+
+    @Builder.Default
+    private boolean expiredReminderSent = false;
+
     public enum GoalStatus {
         ACTIVE, COMPLETED, CANCELLED
     }

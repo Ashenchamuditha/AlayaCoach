@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -23,6 +24,9 @@ public class EmailService {
 
     @Value("${resend.from.email}")
     private String resendFromEmail;
+
+    @Value("${spring.mail.username:ashen.chamu123@gmail.com}")
+    private String mailUsername;
 
     public EmailService(JavaMailSender mailSender, WebClient.Builder webClientBuilder) {
         this.mailSender = mailSender;
@@ -46,7 +50,8 @@ public class EmailService {
             log.info("Attempting backup SMTP delivery to {}", to);
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom("Alaya Master Coach <ashen.chamu123@gmail.com>");
+            String fromAddress = (mailUsername != null && !mailUsername.isBlank()) ? mailUsername.trim() : "ashen.chamu123@gmail.com";
+            helper.setFrom("Alaya Master Coach <" + fromAddress + ">");
             helper.setTo(to);
             helper.setSubject(subject);
             helper.setText(htmlContent, true);
@@ -79,6 +84,7 @@ public class EmailService {
         log.info("Email sent successfully via Resend HTTP API to {}", to);
     }
 
+    @Async
     public void sendWelcomeEmail(String to, String userName) {
         String subject = "Welcome to Alaya Master Coach! 🚀";
         String html = getWelcomeTemplate(userName);
@@ -124,6 +130,7 @@ public class EmailService {
                "</html>";
     }
 
+    @Async
     public void sendOtpEmail(String to, String otp) {
         log.info("ALAYA SYSTEM - BACKUP OTP FOR {}: [{}]", to, otp);
         String subject = "Your Alaya Verification Code";
@@ -131,6 +138,7 @@ public class EmailService {
         sendHtmlEmail(to, subject, html);
     }
 
+    @Async
     public void sendPasswordResetOtpEmail(String to, String otp) {
         log.info("ALAYA SYSTEM - BACKUP PASSWORD RESET OTP FOR {}: [{}]", to, otp);
         String subject = "Alaya Password Reset Request";
@@ -138,6 +146,7 @@ public class EmailService {
         sendHtmlEmail(to, subject, html);
     }
 
+    @Async
     public void sendGoalAddedEmail(String to, String userName, String goalTitle, String creatorName) {
         String subject = "New Goal Added to Your Alaya Dashboard";
         String html = getGoalTemplate(userName, goalTitle, creatorName);
@@ -203,5 +212,138 @@ public class EmailService {
                "  </div>" +
                "</body>" +
                "</html>";
+    }
+
+    @Async
+    public void sendTaskStartedEmail(String to, String userName, String taskTitle, String priority, String dueDate) {
+        String subject = "Task Started: " + taskTitle + " 🏁";
+        String html = getTaskStartedTemplate(userName, taskTitle, priority, dueDate);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    @Async
+    public void sendTaskCompletedEmail(String to, String userName, String taskTitle, String completedAt) {
+        String subject = "Task Completed: " + taskTitle + " 🎉";
+        String html = getTaskCompletedTemplate(userName, taskTitle, completedAt);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    @Async
+    public void sendTaskReminderEmail(String to, String userName, String taskTitle, String timeLeftStr) {
+        String subject = "Task Deadline Nearing: " + taskTitle + " ⏳";
+        String html = getTaskReminderTemplate(userName, taskTitle, timeLeftStr);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    @Async
+    public void sendTaskExpiredEmail(String to, String userName, String taskTitle, Long goalId) {
+        String subject = "Task Expired: " + taskTitle + " ⚠️";
+        String html = getTaskExpiredTemplate(userName, taskTitle, goalId);
+        sendHtmlEmail(to, subject, html);
+    }
+
+    private String getTaskStartedTemplate(String userName, String taskTitle, String priority, String dueDate) {
+        return "<!DOCTYPE html><html>" +
+               "<head><style>" +
+               "  body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; color: #333333; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 12px 24px; background-color: #6366f1; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; }" +
+               "</style></head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Task Started! 🏁</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hi " + userName + ",</p>" +
+               "      <p>You have successfully started the task: <strong>" + taskTitle + "</strong>.</p>" +
+               "      <p><strong>Priority:</strong> " + priority + "<br>" +
+               "      <strong>Target End/Due Date:</strong> " + (dueDate != null ? dueDate : "N/A") + "</p>" +
+               "      <p>Log in to your dashboard to track your progress and stay focused!</p>" +
+               "      <center><a href='https://alaya-coach.vercel.app/app' class='button'>View My Dashboard</a></center>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body></html>";
+    }
+
+    private String getTaskCompletedTemplate(String userName, String taskTitle, String completedAt) {
+        return "<!DOCTYPE html><html>" +
+               "<head><style>" +
+               "  body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; color: #333333; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 12px 24px; background-color: #10b981; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; }" +
+               "</style></head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Task Completed! 🎉</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hi " + userName + ",</p>" +
+               "      <p>Great job! You have completed the task: <strong>" + taskTitle + "</strong>.</p>" +
+               "      <p><strong>Completed At:</strong> " + completedAt + "</p>" +
+               "      <p>Keep up the great momentum and check your coaching dashboard for next steps!</p>" +
+               "      <center><a href='https://alaya-coach.vercel.app/app' class='button'>Go to Dashboard</a></center>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body></html>";
+    }
+
+    private String getTaskReminderTemplate(String userName, String taskTitle, String timeLeftStr) {
+        return "<!DOCTYPE html><html>" +
+               "<head><style>" +
+               "  body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; color: #333333; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 12px 24px; background-color: #f59e0b; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: 600; }" +
+               "</style></head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Task Nearing Deadline! ⏳</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hi " + userName + ",</p>" +
+               "      <p>This is a reminder that the deadline for your task <strong>" + taskTitle + "</strong> is approaching.</p>" +
+               "      <p><strong>Remaining Time:</strong> " + timeLeftStr + "</p>" +
+               "      <p>Log in now to update or complete your task before it expires!</p>" +
+               "      <center><a href='https://alaya-coach.vercel.app/app' class='button'>View My Task</a></center>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body></html>";
+    }
+
+    private String getTaskExpiredTemplate(String userName, String taskTitle, Long goalId) {
+        return "<!DOCTYPE html><html>" +
+               "<head><style>" +
+               "  body { font-family: 'Segoe UI', sans-serif; background-color: #f4f7f9; margin: 0; padding: 0; }" +
+               "  .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }" +
+               "  .header { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px; text-align: center; color: #ffffff; }" +
+               "  .content { padding: 40px; color: #333333; }" +
+               "  .footer { background-color: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #94a3b8; }" +
+               "  .button { display: inline-block; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin: 10px; }" +
+               "  .btn-complete { background-color: #10b981; color: #ffffff; }" +
+               "  .btn-remove { background-color: #ef4444; color: #ffffff; }" +
+               "</style></head>" +
+               "<body>" +
+               "  <div class='container'>" +
+               "    <div class='header'><h1>Task Expired! ⚠️</h1></div>" +
+               "    <div class='content'>" +
+               "      <p>Hi " + userName + ",</p>" +
+               "      <p>It looks like the duration or due date for your task <strong>" + taskTitle + "</strong> has expired, and you forgot to complete it.</p>" +
+               "      <p>Would you like to mark it as completed now, or remove it from your dashboard?</p>" +
+               "      <center>" +
+               "        <a href='https://alaya-coach.vercel.app/app?action=complete&goalId=" + goalId + "' class='button btn-complete'>Mark Completed</a>" +
+               "        <a href='https://alaya-coach.vercel.app/app?action=remove&goalId=" + goalId + "' class='button btn-remove'>Remove Task</a>" +
+               "      </center>" +
+               "    </div>" +
+               "    <div class='footer'>&copy; 2026 Alaya Master Coach. All rights reserved.</div>" +
+               "  </div>" +
+               "</body></html>";
     }
 }

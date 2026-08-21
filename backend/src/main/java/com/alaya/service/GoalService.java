@@ -113,6 +113,21 @@ public class GoalService {
             );
         }
 
+        // Send Task Started Email
+        if (client != null) {
+            try {
+                emailService.sendTaskStartedEmail(
+                    client.getEmail(),
+                    client.getFullName(),
+                    title,
+                    goal.getPriority().name(),
+                    goal.getDueDate() != null ? goal.getDueDate().toString() : null
+                );
+            } catch (Exception e) {
+                System.err.println("Failed to send task started email: " + e.getMessage());
+            }
+        }
+
         notifyUpdate(goal);
         return goal;
     }
@@ -246,6 +261,16 @@ public class GoalService {
                         String.valueOf(goal.getId())
                 );
             }
+
+            // Send Task Completed Email
+            try {
+                User client = userRepository.findById(goal.getClientId()).orElse(null);
+                if (client != null) {
+                    emailService.sendTaskCompletedEmail(client.getEmail(), client.getFullName(), goal.getTitle(), goal.getCompletedAt().toString());
+                }
+            } catch (Exception e) {
+                System.err.println("Failed to send task completed email: " + e.getMessage());
+            }
         } else {
             goal.setStatus(Goal.GoalStatus.ACTIVE);
             goal.setCompletedAt(null);
@@ -276,6 +301,16 @@ public class GoalService {
                 com.alaya.model.Notification.NotificationType.GOAL_COMPLETE,
                 String.valueOf(goal.getId())
         );
+
+        // Send Task Completed Email
+        try {
+            User client = userRepository.findById(goal.getClientId()).orElse(null);
+            if (client != null) {
+                emailService.sendTaskCompletedEmail(client.getEmail(), client.getFullName(), goal.getTitle(), goal.getCompletedAt().toString());
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to send task completed email: " + e.getMessage());
+        }
 
         Goal saved = goalRepository.save(goal);
         notifyUpdate(saved);
